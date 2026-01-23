@@ -1,0 +1,500 @@
+import React from 'react';
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { CustomerRequest, BrakeType } from '@/types';
+import StudsPcdBlock from './StudsPcdBlock';
+import { useLanguage } from '@/context/LanguageContext';
+
+interface SectionTechnicalInfoProps {
+  formData: Partial<CustomerRequest>;
+  onChange: (field: keyof CustomerRequest, value: any) => void;
+  isReadOnly: boolean;
+  errors?: Record<string, string>;
+  configurationTypeOptions?: string[];
+  axleLocationOptions?: string[];
+  articulationTypeOptions?: string[];
+  brakeTypeOptions?: string[];
+  brakeSizeOptions?: string[];
+  suspensionOptions?: string[];
+}
+
+const SectionTechnicalInfo: React.FC<SectionTechnicalInfoProps> = ({
+  formData,
+  onChange,
+  isReadOnly,
+  errors = {},
+  configurationTypeOptions = [],
+  axleLocationOptions = [],
+  articulationTypeOptions = [],
+  brakeTypeOptions = [],
+  brakeSizeOptions = [],
+  suspensionOptions = [],
+}) => {
+  const { t, translateOption } = useLanguage();
+  const showConfigurationTypeOther = formData.configurationType === 'other';
+  const showAxleLocationOther = formData.axleLocation === 'other';
+  const showArticulationTypeOther = formData.articulationType === 'other';
+
+  const hasConfigurationOptions = configurationTypeOptions.length > 0;
+  const hasAxleLocationOptions = axleLocationOptions.length > 0;
+  const hasArticulationOptions = articulationTypeOptions.length > 0;
+  const hasBrakeTypeOptions = brakeTypeOptions.length > 0;
+  const hasBrakeSizeOptions = brakeSizeOptions.length > 0;
+  const hasSuspensionOptions = suspensionOptions.length > 0;
+
+  const normalizeBrakeType = (raw: string): BrakeType => {
+    const v = raw.trim().toLowerCase();
+    if (v === 'drum') return 'drum';
+    if (v === 'disk' || v === 'disc') return 'disk';
+    if (v === 'n/a' || v === 'na' || v === 'n.a') return 'na';
+    return 'na';
+  };
+
+  return (
+    <div className="space-y-4 md:space-y-6">
+      <h3 className="section-title flex items-center gap-2 text-base md:text-lg">
+        <span className="w-7 h-7 md:w-8 md:h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center text-xs md:text-sm font-bold shrink-0">4</span>
+        {t.request.technicalInfo}
+      </h3>
+      
+      {/* Product Type Section - 3 Sub-fields (Configuration Type first) */}
+      <div className="bg-muted/30 rounded-lg p-3 md:p-4 border border-border/50">
+        <h4 className="text-sm font-semibold text-foreground mb-3 md:mb-4">{t.request.productType}</h4>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
+          {/* Configuration Type (FIRST) */}
+          <div className="space-y-2">
+            <Label htmlFor="configurationType" className="text-sm font-medium">
+              {t.request.configurationType} <span className="text-destructive">*</span>
+            </Label>
+            {hasConfigurationOptions ? (
+              <Select
+                value={formData.configurationType || ''}
+                onValueChange={(value) => {
+                  onChange('configurationType', value);
+                  if (value !== 'other') {
+                    onChange('configurationTypeOther', '');
+                  }
+                }}
+                disabled={isReadOnly}
+              >
+                <SelectTrigger className={errors.configurationType ? 'border-destructive' : ''}>
+                  <SelectValue placeholder={t.request.selectConfigurationType} />
+                </SelectTrigger>
+                <SelectContent className="z-50 bg-card border border-border">
+                  {configurationTypeOptions.map((type) => (
+                    <SelectItem key={type} value={type}>
+                      {translateOption(type)}
+                    </SelectItem>
+                  ))}
+                  <SelectItem value="other">{t.common.other}</SelectItem>
+                </SelectContent>
+              </Select>
+            ) : (
+              <Input
+                id="configurationType"
+                value={formData.configurationType || ''}
+                onChange={(e) => onChange('configurationType', e.target.value)}
+                placeholder={t.request.specifyConfigurationType}
+                disabled={isReadOnly}
+                className={errors.configurationType ? 'border-destructive' : ''}
+              />
+            )}
+            {errors.configurationType && (
+              <p className="text-xs text-destructive">{errors.configurationType}</p>
+            )}
+          </div>
+
+          {/* Configuration Type Other */}
+          {showConfigurationTypeOther && hasConfigurationOptions && (
+            <div className="space-y-2">
+              <Label htmlFor="configurationTypeOther" className="text-sm font-medium">
+                {t.request.specifyConfigurationType} <span className="text-destructive">*</span>
+              </Label>
+              <Input
+                id="configurationTypeOther"
+                value={formData.configurationTypeOther || ''}
+                onChange={(e) => onChange('configurationTypeOther', e.target.value)}
+                placeholder={t.request.specifyConfigurationType}
+                disabled={isReadOnly}
+                className={errors.configurationTypeOther ? 'border-destructive' : ''}
+              />
+              {errors.configurationTypeOther && (
+                <p className="text-xs text-destructive">{errors.configurationTypeOther}</p>
+              )}
+            </div>
+          )}
+
+          {/* Axle Location */}
+          <div className="space-y-2">
+            <Label htmlFor="axleLocation" className="text-sm font-medium">
+              {t.request.axleLocation} <span className="text-destructive">*</span>
+            </Label>
+            {hasAxleLocationOptions ? (
+              <Select
+                value={formData.axleLocation || ''}
+                onValueChange={(value) => {
+                  onChange('axleLocation', value);
+                  if (value !== 'other') {
+                    onChange('axleLocationOther', '');
+                  }
+                }}
+                disabled={isReadOnly}
+              >
+                <SelectTrigger className={errors.axleLocation ? 'border-destructive' : ''}>
+                  <SelectValue placeholder={t.request.selectAxleLocation} />
+                </SelectTrigger>
+                 <SelectContent className="z-50 bg-card border border-border">
+                  {axleLocationOptions.map((type) => (
+                    <SelectItem key={type} value={type}>
+                      {translateOption(type)}
+                    </SelectItem>
+                  ))}
+                  <SelectItem value="other">{t.common.other}</SelectItem>
+                </SelectContent>
+              </Select>
+            ) : (
+              <Input
+                id="axleLocation"
+                value={formData.axleLocation || ''}
+                onChange={(e) => onChange('axleLocation', e.target.value)}
+                placeholder={t.request.specifyAxleLocation}
+                disabled={isReadOnly}
+                className={errors.axleLocation ? 'border-destructive' : ''}
+              />
+            )}
+            {errors.axleLocation && (
+              <p className="text-xs text-destructive">{errors.axleLocation}</p>
+            )}
+          </div>
+
+          {/* Axle Location Other */}
+          {showAxleLocationOther && hasAxleLocationOptions && (
+            <div className="space-y-2">
+              <Label htmlFor="axleLocationOther" className="text-sm font-medium">
+                {t.request.specifyAxleLocation} <span className="text-destructive">*</span>
+              </Label>
+              <Input
+                id="axleLocationOther"
+                value={formData.axleLocationOther || ''}
+                onChange={(e) => onChange('axleLocationOther', e.target.value)}
+                placeholder={t.request.specifyAxleLocation}
+                disabled={isReadOnly}
+                className={errors.axleLocationOther ? 'border-destructive' : ''}
+              />
+              {errors.axleLocationOther && (
+                <p className="text-xs text-destructive">{errors.axleLocationOther}</p>
+              )}
+            </div>
+          )}
+
+          {/* Articulation Type */}
+          <div className="space-y-2">
+            <Label htmlFor="articulationType" className="text-sm font-medium">
+              {t.request.articulationType} <span className="text-destructive">*</span>
+            </Label>
+            {hasArticulationOptions ? (
+              <Select
+                value={formData.articulationType || ''}
+                onValueChange={(value) => {
+                  onChange('articulationType', value);
+                  if (value !== 'other') {
+                    onChange('articulationTypeOther', '');
+                  }
+                }}
+                disabled={isReadOnly}
+              >
+                <SelectTrigger className={errors.articulationType ? 'border-destructive' : ''}>
+                  <SelectValue placeholder={t.request.selectArticulationType} />
+                </SelectTrigger>
+                <SelectContent className="z-50 bg-card border border-border">
+                  {articulationTypeOptions.map((type) => (
+                    <SelectItem key={type} value={type}>
+                      {translateOption(type)}
+                    </SelectItem>
+                  ))}
+                  <SelectItem value="other">{t.common.other}</SelectItem>
+                </SelectContent>
+              </Select>
+            ) : (
+              <Input
+                id="articulationType"
+                value={formData.articulationType || ''}
+                onChange={(e) => onChange('articulationType', e.target.value)}
+                placeholder={t.request.specifyArticulationType}
+                disabled={isReadOnly}
+                className={errors.articulationType ? 'border-destructive' : ''}
+              />
+            )}
+            {errors.articulationType && (
+              <p className="text-xs text-destructive">{errors.articulationType}</p>
+            )}
+          </div>
+
+          {/* Articulation Type Other */}
+          {showArticulationTypeOther && hasArticulationOptions && (
+            <div className="space-y-2">
+              <Label htmlFor="articulationTypeOther" className="text-sm font-medium">
+                {t.request.specifyArticulationType} <span className="text-destructive">*</span>
+              </Label>
+              <Input
+                id="articulationTypeOther"
+                value={formData.articulationTypeOther || ''}
+                onChange={(e) => onChange('articulationTypeOther', e.target.value)}
+                placeholder={t.request.specifyArticulationType}
+                disabled={isReadOnly}
+                className={errors.articulationTypeOther ? 'border-destructive' : ''}
+              />
+              {errors.articulationTypeOther && (
+                <p className="text-xs text-destructive">{errors.articulationTypeOther}</p>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+        {/* Loads */}
+        <div className="space-y-2">
+          <Label htmlFor="loadsKg" className="text-sm font-medium">
+            {t.request.loads} (kg) <span className="text-destructive">*</span>
+          </Label>
+          <Input
+            id="loadsKg"
+            type="number"
+            value={formData.loadsKg || ''}
+            onChange={(e) => onChange('loadsKg', e.target.value ? parseInt(e.target.value) : null)}
+            placeholder={t.request.loadsExample}
+            disabled={isReadOnly}
+            className={errors.loadsKg ? 'border-destructive' : ''}
+          />
+          {errors.loadsKg && (
+            <p className="text-xs text-destructive">{errors.loadsKg}</p>
+          )}
+        </div>
+
+        {/* Speeds */}
+        <div className="space-y-2">
+          <Label htmlFor="speedsKmh" className="text-sm font-medium">
+            {t.request.speeds} (km/h) <span className="text-destructive">*</span>
+          </Label>
+          <Input
+            id="speedsKmh"
+            type="number"
+            value={formData.speedsKmh || ''}
+            onChange={(e) => onChange('speedsKmh', e.target.value ? parseInt(e.target.value) : null)}
+            placeholder={t.request.speedsExample}
+            disabled={isReadOnly}
+            className={errors.speedsKmh ? 'border-destructive' : ''}
+          />
+          {errors.speedsKmh && (
+            <p className="text-xs text-destructive">{errors.speedsKmh}</p>
+          )}
+        </div>
+
+        {/* Tyre Size */}
+        <div className="space-y-2">
+          <Label htmlFor="tyreSize" className="text-sm font-medium">
+            {t.request.tyreSize} <span className="text-destructive">*</span>
+          </Label>
+          <Input
+            id="tyreSize"
+            value={formData.tyreSize || ''}
+            onChange={(e) => onChange('tyreSize', e.target.value)}
+            placeholder={t.request.tyreSizeExample}
+            disabled={isReadOnly}
+            className={errors.tyreSize ? 'border-destructive' : ''}
+          />
+          {errors.tyreSize && (
+            <p className="text-xs text-destructive">{errors.tyreSize}</p>
+          )}
+        </div>
+
+        {/* Track */}
+        <div className="space-y-2">
+          <Label htmlFor="trackMm" className="text-sm font-medium">
+            {t.request.track} (mm) <span className="text-destructive">*</span>
+          </Label>
+          <Input
+            id="trackMm"
+            type="number"
+            value={formData.trackMm || ''}
+            onChange={(e) => onChange('trackMm', e.target.value ? parseInt(e.target.value) : null)}
+            placeholder={t.request.trackExample}
+            disabled={isReadOnly}
+            className={errors.trackMm ? 'border-destructive' : ''}
+          />
+          {errors.trackMm && (
+            <p className="text-xs text-destructive">{errors.trackMm}</p>
+          )}
+        </div>
+      </div>
+
+      {/* Studs/PCD Block */}
+      <StudsPcdBlock
+        formData={formData}
+        onChange={onChange}
+        isReadOnly={isReadOnly}
+        errors={errors}
+      />
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+        {/* Wheel Base */}
+        <div className="space-y-2">
+          <Label htmlFor="wheelBase" className="text-sm font-medium">
+            {t.request.wheelBase} (mm)
+          </Label>
+          <Input
+            id="wheelBase"
+            value={formData.wheelBase || ''}
+            onChange={(e) => onChange('wheelBase', e.target.value)}
+            placeholder={t.request.steeringAxleParam}
+            disabled={isReadOnly}
+          />
+          <p className="text-xs text-muted-foreground">{t.request.steeringAxleParam}</p>
+        </div>
+
+        {/* Finish */}
+        <div className="space-y-2">
+          <Label htmlFor="finish" className="text-sm font-medium">
+            {t.request.finish}
+          </Label>
+          <Input
+            id="finish"
+            value={formData.finish || t.request.blackPrimerDefault}
+            onChange={(e) => onChange('finish', e.target.value)}
+            placeholder={t.request.blackPrimerDefault}
+            disabled={isReadOnly}
+          />
+        </div>
+
+        {/* Brake Type */}
+        <div className="space-y-2">
+          <Label htmlFor="brakeType" className="text-sm font-medium">
+            {t.request.brakeType} <span className="text-destructive">*</span>
+          </Label>
+          {hasBrakeTypeOptions ? (
+            <Select
+              value={(formData.brakeType as any) || ''}
+              onValueChange={(value) => onChange('brakeType', value as BrakeType)}
+              disabled={isReadOnly}
+            >
+              <SelectTrigger className={errors.brakeType ? 'border-destructive' : ''}>
+                <SelectValue placeholder={t.request.selectBrakeType} />
+              </SelectTrigger>
+              <SelectContent className="z-50 bg-card border border-border">
+                {brakeTypeOptions.map((label) => {
+                  const value = normalizeBrakeType(label);
+                  return (
+                    <SelectItem key={label} value={value}>
+                      {translateOption(label)}
+                    </SelectItem>
+                  );
+                })}
+              </SelectContent>
+            </Select>
+          ) : (
+            <Select
+              value={formData.brakeType || ''}
+              onValueChange={(value) => onChange('brakeType', value as BrakeType)}
+              disabled={isReadOnly}
+            >
+              <SelectTrigger className={errors.brakeType ? 'border-destructive' : ''}>
+                <SelectValue placeholder={t.request.selectBrakeType} />
+              </SelectTrigger>
+              <SelectContent className="z-50 bg-card border border-border">
+                <SelectItem value="drum">{t.request.drum}</SelectItem>
+                <SelectItem value="disk">{t.request.disk}</SelectItem>
+              </SelectContent>
+            </Select>
+          )}
+          {errors.brakeType && (
+            <p className="text-xs text-destructive">{errors.brakeType}</p>
+          )}
+        </div>
+
+        {/* Brake Size */}
+        <div className="space-y-2">
+          <Label htmlFor="brakeSize" className="text-sm font-medium">
+            {t.request.brakeSize} <span className="text-destructive">*</span>
+          </Label>
+          {hasBrakeSizeOptions ? (
+            <Select
+              value={formData.brakeSize || ''}
+              onValueChange={(value) => onChange('brakeSize', value)}
+              disabled={isReadOnly}
+            >
+              <SelectTrigger className={errors.brakeSize ? 'border-destructive' : ''}>
+                <SelectValue placeholder={t.request.selectBrakeSize} />
+              </SelectTrigger>
+                <SelectContent className="z-50 bg-card border border-border">
+                {brakeSizeOptions.map((size) => (
+                  <SelectItem key={size} value={size}>
+                    {translateOption(size)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          ) : (
+            <Input
+              id="brakeSize"
+              value={formData.brakeSize || ''}
+              onChange={(e) => onChange('brakeSize', e.target.value)}
+              placeholder={t.request.selectBrakeSize}
+              disabled={isReadOnly}
+              className={errors.brakeSize ? 'border-destructive' : ''}
+            />
+          )}
+          {errors.brakeSize && (
+            <p className="text-xs text-destructive">{errors.brakeSize}</p>
+          )}
+        </div>
+
+        {/* Suspension */}
+        <div className="lg:col-span-2 space-y-2">
+          <Label htmlFor="suspension" className="text-sm font-medium">
+            {t.request.suspension} <span className="text-destructive">*</span>
+          </Label>
+          {hasSuspensionOptions ? (
+            <Select
+              value={formData.suspension || ''}
+              onValueChange={(value) => onChange('suspension', value)}
+              disabled={isReadOnly}
+            >
+              <SelectTrigger className={errors.suspension ? 'border-destructive' : ''}>
+                <SelectValue placeholder={t.request.selectSuspension} />
+              </SelectTrigger>
+              <SelectContent className="bg-card border border-border">
+                {suspensionOptions.map((suspension) => (
+                  <SelectItem key={suspension} value={suspension}>
+                    {translateOption(suspension)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          ) : (
+            <Input
+              id="suspension"
+              value={formData.suspension || ''}
+              onChange={(e) => onChange('suspension', e.target.value)}
+              placeholder={t.request.selectSuspension}
+              disabled={isReadOnly}
+              className={errors.suspension ? 'border-destructive' : ''}
+            />
+          )}
+          {errors.suspension && (
+            <p className="text-xs text-destructive">{errors.suspension}</p>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default SectionTechnicalInfo;
