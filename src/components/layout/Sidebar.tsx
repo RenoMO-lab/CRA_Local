@@ -54,6 +54,11 @@ const Sidebar: React.FC<SidebarProps> = ({
     icon: BarChart3,
     roles: ['sales', 'design', 'costing', 'admin']
   }, {
+    path: '/test',
+    labelKey: 'test' as const,
+    icon: ClipboardList,
+    roles: ['sales', 'design', 'costing', 'admin']
+  }, {
     path: '/settings',
     labelKey: 'settings' as const,
     icon: Settings,
