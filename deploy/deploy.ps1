@@ -1,11 +1,18 @@
 param(
-  [string]$AppPath = "C:\\apps\\CRA_Local",
+  [string]$AppPath = "C:\apps\CRA_Local",
   [string]$ServiceName = "CRA_Local"
 )
 
 $ErrorActionPreference = "Stop"
 
 Set-Location $AppPath
+
+$backupScript = Join-Path $AppPath "deploy\db-backup.ps1"
+if (Test-Path $backupScript) {
+  & $backupScript -AppPath $AppPath
+} else {
+  Write-Warning "db-backup.ps1 not found. Skipping backup."
+}
 
 git fetch --prune
 git checkout main

@@ -1,4 +1,7 @@
+import dotenv from "dotenv";
 import sql from "mssql";
+
+dotenv.config();
 
 const getEnv = (name, fallback = undefined) => {
   const value = process.env[name];
