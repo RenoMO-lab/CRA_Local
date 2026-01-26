@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useAdminSettings, ListItem, UserItem, ListCategory } from '@/context/AdminSettingsContext';
 import { useLanguage } from '@/context/LanguageContext';
@@ -119,6 +119,7 @@ const Settings: React.FC = () => {
   const [newUserForm, setNewUserForm] = useState({ name: '', email: '', role: 'sales' as UserRole, password: '' });
   const [feedbackItems, setFeedbackItems] = useState<FeedbackItem[]>([]);
   const [isFeedbackLoading, setIsFeedbackLoading] = useState(false);
+  const [hasFeedbackError, setHasFeedbackError] = useState(false);
   const [deployInfo, setDeployInfo] = useState<DeployInfo | null>(null);
   const [isDeployLoading, setIsDeployLoading] = useState(false);
   const [hasDeployError, setHasDeployError] = useState(false);
@@ -150,24 +151,36 @@ const Settings: React.FC = () => {
     loadDeployInfo();
   }, []);
 
-  useEffect(() => {
-    const loadFeedback = async () => {
-      setIsFeedbackLoading(true);
-      try {
-        const res = await fetch('/api/feedback');
-        if (!res.ok) throw new Error(`Failed to load feedback: ${res.status}`);
-        const data = await res.json();
-        setFeedbackItems(Array.isArray(data) ? data : []);
-      } catch (error) {
-        console.error('Failed to load feedback:', error);
-        setFeedbackItems([]);
-      } finally {
-        setIsFeedbackLoading(false);
-      }
-    };
-
-    loadFeedback();
+  const loadFeedback = useCallback(async () => {
+    setIsFeedbackLoading(true);
+    setHasFeedbackError(false);
+    try {
+      const res = await fetch('/api/feedback');
+      if (!res.ok) throw new Error(`Failed to load feedback: ${res.status}`);
+      const data = await res.json();
+      setFeedbackItems(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error('Failed to load feedback:', error);
+      setFeedbackItems([]);
+      setHasFeedbackError(true);
+    } finally {
+      setIsFeedbackLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    loadFeedback();
+  }, [loadFeedback]);
+
+  useEffect(() => {
+    const handleFeedbackSubmitted = () => {
+      loadFeedback();
+    };
+    window.addEventListener('feedback:submitted', handleFeedbackSubmitted);
+    return () => {
+      window.removeEventListener('feedback:submitted', handleFeedbackSubmitted);
+    };
+  }, [loadFeedback]);
 
   const exportRequestsCsv = () => {
     if (isLoading) {
@@ -815,13 +828,21 @@ const Settings: React.FC = () => {
 
         <TabsContent value="feedback" className="space-y-6">
           <div className="bg-card rounded-lg border border-border p-4 md:p-6">
-            <div className="flex flex-col gap-1">
-              <h3 className="text-lg font-semibold text-foreground">{t.feedback.tableTitle}</h3>
-              <p className="text-sm text-muted-foreground">{t.feedback.tableDesc}</p>
+            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+              <div className="flex flex-col gap-1">
+                <h3 className="text-lg font-semibold text-foreground">{t.feedback.tableTitle}</h3>
+                <p className="text-sm text-muted-foreground">{t.feedback.tableDesc}</p>
+              </div>
+              <Button variant="outline" onClick={loadFeedback} disabled={isFeedbackLoading}>
+                <RefreshCw size={16} className="mr-2" />
+                {isFeedbackLoading ? t.common.loading : t.feedback.refresh}
+              </Button>
             </div>
 
             <div className="mt-4">
-              {isFeedbackLoading ? (
+              {hasFeedbackError ? (
+                <p className="text-sm text-destructive">{t.feedback.loadFailed}</p>
+              ) : isFeedbackLoading ? (
                 <p className="text-sm text-muted-foreground">{t.common.loading}</p>
               ) : feedbackItems.length === 0 ? (
                 <p className="text-sm text-muted-foreground">{t.feedback.noFeedback}</p>

@@ -101,6 +101,7 @@ const FeedbackDialog: React.FC<FeedbackDialogProps> = ({ trigger }) => {
       }
 
       toast.success(t.feedback.submittedTitle, { description: t.feedback.submittedDesc });
+      window.dispatchEvent(new CustomEvent('feedback:submitted'));
       resetForm();
       setOpen(false);
     } catch (error) {
