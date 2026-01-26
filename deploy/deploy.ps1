@@ -15,7 +15,7 @@ if (Test-Path $backupScript) {
 }
 
 git fetch --prune
-git checkout main
+git checkout main 2>$null
 git pull --ff-only
 
 if (Get-Command bun -ErrorAction SilentlyContinue) {
