@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { Eye, Edit, Trash2, MoreHorizontal, Download } from 'lucide-react';
-import { CustomerRequest, UserRole, AXLE_LOCATIONS, ARTICULATION_TYPES, CONFIGURATION_TYPES } from '@/types';
+import { CustomerRequest, UserRole, RequestProduct, AXLE_LOCATIONS, ARTICULATION_TYPES, CONFIGURATION_TYPES } from '@/types';
 import StatusBadge from '@/components/ui/StatusBadge';
 import { Button } from '@/components/ui/button';
 import {
@@ -44,7 +44,21 @@ const RequestsTable: React.FC<RequestsTableProps> = ({ requests, userRole, onDel
   const { t, translateOption } = useLanguage();
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
 
-  const getProductTypeLabel = (request: CustomerRequest) => {
+  const getPrimaryProduct = (request: CustomerRequest): Partial<RequestProduct> => {
+    if (request.products && request.products.length) {
+      return request.products[0];
+    }
+    return {
+      axleLocation: request.axleLocation,
+      axleLocationOther: request.axleLocationOther,
+      articulationType: request.articulationType,
+      articulationTypeOther: request.articulationTypeOther,
+      configurationType: request.configurationType,
+      configurationTypeOther: request.configurationTypeOther,
+    };
+  };
+
+  const getProductTypeLabel = (product: Partial<RequestProduct>) => {
     const parts: string[] = [];
     const excludedValues = ['n/a', 'na', '-', ''];
     
@@ -55,32 +69,32 @@ const RequestsTable: React.FC<RequestsTableProps> = ({ requests, userRole, onDel
     };
     
     // Axle Location
-    if (request.axleLocation) {
-      if (request.axleLocation === 'other' && request.axleLocationOther) {
-        addPart(request.axleLocationOther);
+    if (product.axleLocation) {
+      if (product.axleLocation === 'other' && product.axleLocationOther) {
+        addPart(product.axleLocationOther);
       } else {
-        const found = AXLE_LOCATIONS.find(p => p.value === request.axleLocation);
-        addPart(found ? found.label : request.axleLocation);
+        const found = AXLE_LOCATIONS.find(p => p.value === product.axleLocation);
+        addPart(found ? found.label : String(product.axleLocation));
       }
     }
     
     // Articulation Type
-    if (request.articulationType) {
-      if (request.articulationType === 'other' && request.articulationTypeOther) {
-        addPart(request.articulationTypeOther);
+    if (product.articulationType) {
+      if (product.articulationType === 'other' && product.articulationTypeOther) {
+        addPart(product.articulationTypeOther);
       } else {
-        const found = ARTICULATION_TYPES.find(p => p.value === request.articulationType);
-        addPart(found ? found.label : request.articulationType);
+        const found = ARTICULATION_TYPES.find(p => p.value === product.articulationType);
+        addPart(found ? found.label : String(product.articulationType));
       }
     }
     
     // Configuration Type
-    if (request.configurationType) {
-      if (request.configurationType === 'other' && request.configurationTypeOther) {
-        addPart(request.configurationTypeOther);
+    if (product.configurationType) {
+      if (product.configurationType === 'other' && product.configurationTypeOther) {
+        addPart(product.configurationTypeOther);
       } else {
-        const found = CONFIGURATION_TYPES.find(p => p.value === request.configurationType);
-        addPart(found ? found.label : request.configurationType);
+        const found = CONFIGURATION_TYPES.find(p => p.value === product.configurationType);
+        addPart(found ? found.label : String(product.configurationType));
       }
     }
     
@@ -160,7 +174,7 @@ const RequestsTable: React.FC<RequestsTableProps> = ({ requests, userRole, onDel
               </div>
               <div className="flex justify-between gap-3">
                 <span className="text-muted-foreground">{t.table.productType}</span>
-                <span className="font-medium text-right">{getProductTypeLabel(request)}</span>
+                <span className="font-medium text-right">{getProductTypeLabel(getPrimaryProduct(request))}</span>
               </div>
               <div className="flex justify-between gap-3">
                 <span className="text-muted-foreground">{t.table.created}</span>
@@ -222,7 +236,7 @@ const RequestsTable: React.FC<RequestsTableProps> = ({ requests, userRole, onDel
                 <TableCell className="max-w-[200px] truncate">{request.clientName}</TableCell>
                 <TableCell className="max-w-[200px] truncate">{translateOption(request.applicationVehicle)}</TableCell>
                 <TableCell>{translateOption(request.country)}</TableCell>
-                <TableCell>{getProductTypeLabel(request)}</TableCell>
+                <TableCell>{getProductTypeLabel(getPrimaryProduct(request))}</TableCell>
                 <TableCell>{request.createdByName}</TableCell>
                 <TableCell>{format(new Date(request.createdAt), 'MMM d, yyyy')}</TableCell>
                 <TableCell>

@@ -1,5 +1,5 @@
 import jsPDF from 'jspdf';
-import { CustomerRequest, STATUS_CONFIG, AXLE_LOCATIONS, ARTICULATION_TYPES, CONFIGURATION_TYPES, STANDARD_STUDS_PCD_OPTIONS } from '@/types';
+import { CustomerRequest, RequestProduct, STATUS_CONFIG, AXLE_LOCATIONS, ARTICULATION_TYPES, CONFIGURATION_TYPES, STANDARD_STUDS_PCD_OPTIONS } from '@/types';
 import { format } from 'date-fns';
 import { enUS, fr, zhCN } from 'date-fns/locale';
 import { translations, Language } from '@/i18n/translations';
@@ -31,7 +31,7 @@ const getPdfLocale = (language: Language) => {
 };
 
 const getProductTypeLabel = (
-  request: CustomerRequest,
+  product: Partial<RequestProduct>,
   translateOption?: (value: string) => string
 ): string => {
   const translate = translateOption ?? ((value: string) => value);
@@ -44,30 +44,30 @@ const getProductTypeLabel = (
     }
   };
   
-  if (request.axleLocation) {
-    if (request.axleLocation === 'other' && request.axleLocationOther) {
-      addPart(request.axleLocationOther);
+  if (product.axleLocation) {
+    if (product.axleLocation === 'other' && product.axleLocationOther) {
+      addPart(product.axleLocationOther);
     } else {
-      const found = AXLE_LOCATIONS.find(p => p.value === request.axleLocation);
-      addPart(found ? translate(found.label) : request.axleLocation);
+      const found = AXLE_LOCATIONS.find(p => p.value === product.axleLocation);
+      addPart(found ? translate(found.label) : String(product.axleLocation));
     }
   }
   
-  if (request.articulationType) {
-    if (request.articulationType === 'other' && request.articulationTypeOther) {
-      addPart(request.articulationTypeOther);
+  if (product.articulationType) {
+    if (product.articulationType === 'other' && product.articulationTypeOther) {
+      addPart(product.articulationTypeOther);
     } else {
-      const found = ARTICULATION_TYPES.find(p => p.value === request.articulationType);
-      addPart(found ? translate(found.label) : request.articulationType);
+      const found = ARTICULATION_TYPES.find(p => p.value === product.articulationType);
+      addPart(found ? translate(found.label) : String(product.articulationType));
     }
   }
   
-  if (request.configurationType) {
-    if (request.configurationType === 'other' && request.configurationTypeOther) {
-      addPart(request.configurationTypeOther);
+  if (product.configurationType) {
+    if (product.configurationType === 'other' && product.configurationTypeOther) {
+      addPart(product.configurationTypeOther);
     } else {
-      const found = CONFIGURATION_TYPES.find(p => p.value === request.configurationType);
-      addPart(found ? translate(found.label) : request.configurationType);
+      const found = CONFIGURATION_TYPES.find(p => p.value === product.configurationType);
+      addPart(found ? translate(found.label) : String(product.configurationType));
     }
   }
   
@@ -124,6 +124,29 @@ const formatStudsPcdSelection = (selection: string): string => {
   }
   return selection;
 };
+
+const buildLegacyProduct = (request: CustomerRequest): RequestProduct => ({
+  axleLocation: request.axleLocation ?? '',
+  axleLocationOther: request.axleLocationOther ?? '',
+  articulationType: request.articulationType ?? '',
+  articulationTypeOther: request.articulationTypeOther ?? '',
+  configurationType: request.configurationType ?? '',
+  configurationTypeOther: request.configurationTypeOther ?? '',
+  loadsKg: request.loadsKg ?? null,
+  speedsKmh: request.speedsKmh ?? null,
+  tyreSize: request.tyreSize ?? '',
+  trackMm: request.trackMm ?? null,
+  studsPcdMode: request.studsPcdMode ?? 'standard',
+  studsPcdStandardSelections: Array.isArray(request.studsPcdStandardSelections) ? request.studsPcdStandardSelections : [],
+  studsPcdSpecialText: request.studsPcdSpecialText ?? '',
+  wheelBase: request.wheelBase ?? '',
+  finish: request.finish ?? 'Black Primer default',
+  brakeType: request.brakeType ?? null,
+  brakeSize: request.brakeSize ?? '',
+  suspension: request.suspension ?? '',
+  productComments: request.otherRequirements ?? '',
+  attachments: Array.isArray(request.attachments) ? request.attachments : [],
+});
 
 export const generateRequestPDF = async (request: CustomerRequest): Promise<void> => {
   const pdf = new jsPDF('p', 'mm', 'a4');
@@ -379,65 +402,72 @@ export const generateRequestPDF = async (request: CustomerRequest): Promise<void
   drawFieldLine(t.request.environment, translateResolvedOption(request.environment, request.environmentOther));
   y += 6;
 
-  // Technical Information Section
-  drawSectionTitle(t.request.technicalInfo);
+  const products = Array.isArray(request.products) && request.products.length
+    ? request.products
+    : [buildLegacyProduct(request)];
+
   const studsLabelMap = new Map(STANDARD_STUDS_PCD_OPTIONS.map((option) => [option.id, option.label]));
-  const studsValue = request.studsPcdMode === 'standard' && request.studsPcdStandardSelections?.length
-    ? request.studsPcdStandardSelections
-        .map((id) => translateOption(studsLabelMap.get(id) ?? formatStudsPcdSelection(id)))
-        .join('; ')
-    : request.studsPcdMode === 'special' && request.studsPcdSpecialText
-      ? request.studsPcdSpecialText
-      : undefined;
 
-  drawSubsectionTitle(t.pdf.axlePerformanceTitle);
-  drawFieldGrid(
-    [
-      { label: t.request.productType, value: getProductTypeLabel(request, translateOption) },
-      { label: t.pdf.loadsKgLabel, value: request.loadsKg },
-      { label: t.pdf.speedsKmhLabel, value: request.speedsKmh },
-    ],
-    2
-  );
-  y += 4;
+  products.forEach((product, index) => {
+    const productLabel = `${t.request.productLabel} ${index + 1}`;
+    const studsMode = product.studsPcdMode ?? 'standard';
+    const studsValue = studsMode === 'standard' && product.studsPcdStandardSelections?.length
+      ? product.studsPcdStandardSelections
+          .map((id) => translateOption(studsLabelMap.get(id) ?? formatStudsPcdSelection(id)))
+          .join('; ')
+      : studsMode === 'special' && product.studsPcdSpecialText
+        ? product.studsPcdSpecialText
+        : undefined;
 
-  drawSubsectionTitle(t.pdf.wheelsGeometryTitle);
-  drawFieldGrid(
-    [
-      { label: t.request.tyreSize, value: request.tyreSize },
-      { label: t.pdf.trackMmLabel, value: request.trackMm },
-      { label: t.request.wheelBase, value: request.wheelBase },
-    ],
-    2
-  );
-  y += 4;
+    drawSectionTitle(`${t.request.technicalInfo} - ${productLabel}`);
+    drawSubsectionTitle(t.pdf.axlePerformanceTitle);
+    drawFieldGrid(
+      [
+        { label: t.request.productType, value: getProductTypeLabel(product, translateOption) },
+        { label: t.pdf.loadsKgLabel, value: product.loadsKg },
+        { label: t.pdf.speedsKmhLabel, value: product.speedsKmh },
+      ],
+      2
+    );
+    y += 4;
 
-  drawSubsectionTitle(t.pdf.brakingSuspensionTitle);
-  drawFieldGrid(
-    [
-      { label: t.request.brakeType, value: translateBrakeType(request.brakeType) },
-      { label: t.request.brakeSize, value: translateOption(request.brakeSize) },
-      { label: t.request.suspension, value: translateOption(request.suspension) },
-    ],
-    2
-  );
-  y += 4;
+    drawSubsectionTitle(t.pdf.wheelsGeometryTitle);
+    drawFieldGrid(
+      [
+        { label: t.request.tyreSize, value: product.tyreSize },
+        { label: t.pdf.trackMmLabel, value: product.trackMm },
+        { label: t.request.wheelBase, value: product.wheelBase },
+      ],
+      2
+    );
+    y += 4;
 
-  drawSubsectionTitle(t.pdf.finishInterfaceTitle);
-  drawFieldGrid(
-    [
-      { label: t.request.finish, value: request.finish },
-      { label: t.request.studsPcd, value: studsValue },
-    ],
-    2
-  );
-  y += 5;
+    drawSubsectionTitle(t.pdf.brakingSuspensionTitle);
+    drawFieldGrid(
+      [
+        { label: t.request.brakeType, value: translateBrakeType(product.brakeType) },
+        { label: t.request.brakeSize, value: translateOption(product.brakeSize) },
+        { label: t.request.suspension, value: translateOption(product.suspension) },
+      ],
+      2
+    );
+    y += 4;
 
-  // Additional Requirements
-  if (request.otherRequirements) {
-    drawSectionTitle(t.pdf.additionalRequirementsTitle);
-    drawParagraph(request.otherRequirements);
-  }
+    drawSubsectionTitle(t.pdf.finishInterfaceTitle);
+    drawFieldGrid(
+      [
+        { label: t.request.finish, value: product.finish },
+        { label: t.request.studsPcd, value: studsValue },
+      ],
+      2
+    );
+    y += 5;
+
+    if (product.productComments) {
+      drawSectionTitle(`${t.request.productComments} - ${productLabel}`);
+      drawParagraph(product.productComments);
+    }
+  });
 
   // Design Notes
   if (request.designNotes) {

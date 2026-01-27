@@ -3,15 +3,16 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { CustomerRequest, StudsPcdMode, STANDARD_STUDS_PCD_OPTIONS } from '@/types';
+import { RequestProduct, StudsPcdMode, STANDARD_STUDS_PCD_OPTIONS } from '@/types';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/context/LanguageContext';
 
 interface StudsPcdBlockProps {
-  formData: Partial<CustomerRequest>;
-  onChange: (field: keyof CustomerRequest, value: any) => void;
+  formData: Partial<RequestProduct>;
+  onChange: (field: keyof RequestProduct, value: any) => void;
   isReadOnly: boolean;
   errors?: Record<string, string>;
+  idPrefix?: string;
 }
 
 const StudsPcdBlock: React.FC<StudsPcdBlockProps> = ({
@@ -19,8 +20,10 @@ const StudsPcdBlock: React.FC<StudsPcdBlockProps> = ({
   onChange,
   isReadOnly,
   errors = {},
+  idPrefix,
 }) => {
   const { t, translateOption } = useLanguage();
+  const fieldId = (suffix: string) => (idPrefix ? `${idPrefix}-${suffix}` : suffix);
   const mode = formData.studsPcdMode || 'standard';
   const standardSelections = formData.studsPcdStandardSelections || [];
 
@@ -56,14 +59,14 @@ const StudsPcdBlock: React.FC<StudsPcdBlockProps> = ({
             className="flex gap-4"
           >
             <div className="flex items-center space-x-2">
-              <RadioGroupItem value="standard" id="mode-standard" />
-              <Label htmlFor="mode-standard" className="text-sm font-normal cursor-pointer">
+              <RadioGroupItem value="standard" id={fieldId('mode-standard')} />
+              <Label htmlFor={fieldId('mode-standard')} className="text-sm font-normal cursor-pointer">
                 {t.request.standardOptions}
               </Label>
             </div>
             <div className="flex items-center space-x-2">
-              <RadioGroupItem value="special" id="mode-special" />
-              <Label htmlFor="mode-special" className="text-sm font-normal cursor-pointer">
+              <RadioGroupItem value="special" id={fieldId('mode-special')} />
+              <Label htmlFor={fieldId('mode-special')} className="text-sm font-normal cursor-pointer">
                 {t.request.specialPcd}
               </Label>
             </div>
@@ -87,13 +90,13 @@ const StudsPcdBlock: React.FC<StudsPcdBlockProps> = ({
                 )}
               >
                 <Checkbox
-                  id={option.id}
+                  id={fieldId(option.id)}
                   checked={standardSelections.includes(option.id)}
                   onCheckedChange={(checked) => handleStandardSelectionChange(option.id, !!checked)}
                   disabled={isReadOnly}
                 />
                 <Label
-                  htmlFor={option.id}
+                  htmlFor={fieldId(option.id)}
                   className="text-sm font-normal cursor-pointer flex-1"
                 >
                   {translateOption(option.label)}

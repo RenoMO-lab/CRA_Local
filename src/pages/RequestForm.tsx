@@ -1,11 +1,11 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { useRequests } from '@/context/RequestContext';
 import { useAdminSettings } from '@/context/AdminSettingsContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { useToast } from '@/hooks/use-toast';
-import { CustomerRequest, FormMode, RequestStatus } from '@/types';
+import { CustomerRequest, FormMode, RequestStatus, RequestProduct } from '@/types';
 import SectionGeneralInfo from '@/components/request/SectionGeneralInfo';
 import SectionExpectedDelivery from '@/components/request/SectionExpectedDelivery';
 import SectionClientApplication from '@/components/request/SectionClientApplication';
@@ -20,21 +20,7 @@ import StatusBadge from '@/components/ui/StatusBadge';
 import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
-const getInitialFormData = (): Partial<CustomerRequest> => ({
-  clientName: '',
-  clientContact: '',
-  applicationVehicle: '',
-  applicationVehicleOther: '',
-  country: '',
-  expectedQty: null,
-  repeatability: '',
-  expectedDeliverySelections: [],
-  workingCondition: '',
-  workingConditionOther: '',
-  usageType: '',
-  usageTypeOther: '',
-  environment: '',
-  environmentOther: '',
+const getInitialProduct = (): RequestProduct => ({
   axleLocation: '',
   axleLocationOther: '',
   articulationType: '',
@@ -53,8 +39,70 @@ const getInitialFormData = (): Partial<CustomerRequest> => ({
   brakeType: null,
   brakeSize: '',
   suspension: '',
-  otherRequirements: '',
+  productComments: '',
   attachments: [],
+});
+
+const buildLegacyProduct = (request: Partial<CustomerRequest>): RequestProduct => ({
+  axleLocation: request.axleLocation ?? '',
+  axleLocationOther: request.axleLocationOther ?? '',
+  articulationType: request.articulationType ?? '',
+  articulationTypeOther: request.articulationTypeOther ?? '',
+  configurationType: request.configurationType ?? '',
+  configurationTypeOther: request.configurationTypeOther ?? '',
+  loadsKg: request.loadsKg ?? null,
+  speedsKmh: request.speedsKmh ?? null,
+  tyreSize: request.tyreSize ?? '',
+  trackMm: request.trackMm ?? null,
+  studsPcdMode: request.studsPcdMode ?? 'standard',
+  studsPcdStandardSelections: Array.isArray(request.studsPcdStandardSelections) ? request.studsPcdStandardSelections : [],
+  studsPcdSpecialText: request.studsPcdSpecialText ?? '',
+  wheelBase: request.wheelBase ?? '',
+  finish: request.finish ?? 'Black Primer default',
+  brakeType: request.brakeType ?? null,
+  brakeSize: request.brakeSize ?? '',
+  suspension: request.suspension ?? '',
+  productComments: typeof (request as any).productComments === 'string'
+    ? (request as any).productComments
+    : request.otherRequirements ?? '',
+  attachments: Array.isArray(request.attachments) ? request.attachments : [],
+});
+
+const normalizeProducts = (request?: Partial<CustomerRequest>): RequestProduct[] => {
+  if (!request) return [getInitialProduct()];
+  const products = Array.isArray(request.products) ? request.products : [];
+  if (products.length) {
+    return products.map((product) => ({
+      ...getInitialProduct(),
+      ...product,
+      studsPcdMode: product.studsPcdMode ?? 'standard',
+      studsPcdStandardSelections: Array.isArray(product.studsPcdStandardSelections) ? product.studsPcdStandardSelections : [],
+      studsPcdSpecialText: product.studsPcdSpecialText ?? '',
+      productComments: typeof (product as any).productComments === 'string'
+        ? (product as any).productComments
+        : (product as any).otherRequirements ?? '',
+      attachments: Array.isArray(product.attachments) ? product.attachments : [],
+    }));
+  }
+  return [buildLegacyProduct(request)];
+};
+
+const getInitialFormData = (): Partial<CustomerRequest> => ({
+  clientName: '',
+  clientContact: '',
+  applicationVehicle: '',
+  applicationVehicleOther: '',
+  country: '',
+  expectedQty: null,
+  repeatability: '',
+  expectedDeliverySelections: [],
+  workingCondition: '',
+  workingConditionOther: '',
+  usageType: '',
+  usageTypeOther: '',
+  environment: '',
+  environmentOther: '',
+  products: [getInitialProduct()],
   status: 'draft',
 });
 
@@ -113,12 +161,28 @@ const RequestForm: React.FC = () => {
   }
 
   const [formData, setFormData] = useState<Partial<CustomerRequest>>(
-    existingRequest || getInitialFormData()
+    existingRequest ? { ...existingRequest, products: normalizeProducts(existingRequest) } : getInitialFormData()
   );
+  const [loadedRequestId, setLoadedRequestId] = useState<string | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
+
+  useEffect(() => {
+    if (!existingRequest) {
+      if (loadedRequestId !== null) {
+        setFormData(getInitialFormData());
+        setLoadedRequestId(null);
+      }
+      return;
+    }
+
+    if (existingRequest.id !== loadedRequestId) {
+      setFormData({ ...existingRequest, products: normalizeProducts(existingRequest) });
+      setLoadedRequestId(existingRequest.id);
+    }
+  }, [existingRequest, loadedRequestId]);
 
   // Determine form mode
   const mode: FormMode = useMemo(() => {
@@ -153,6 +217,70 @@ const RequestForm: React.FC = () => {
         return newErrors;
       });
     }
+  };
+
+  const handleProductChange = (index: number, field: keyof RequestProduct, value: any) => {
+    setFormData(prev => {
+      const products = [...(prev.products ?? [])];
+      while (products.length <= index) {
+        products.push(getInitialProduct());
+      }
+      products[index] = { ...products[index], [field]: value };
+      return { ...prev, products };
+    });
+
+    const errorKey = `product_${index}_${String(field)}`;
+    if (errors[errorKey]) {
+      setErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[errorKey];
+        return newErrors;
+      });
+    }
+  };
+
+  const handleAddProduct = () => {
+    if (isReadOnly) return;
+    setFormData(prev => ({
+      ...prev,
+      products: [...(prev.products ?? []), getInitialProduct()],
+    }));
+  };
+
+  const handleRemoveProduct = (index: number) => {
+    if (isReadOnly) return;
+    setFormData(prev => {
+      const products = [...(prev.products ?? [])];
+      products.splice(index, 1);
+      return { ...prev, products: products.length ? products : [getInitialProduct()] };
+    });
+    setErrors(prev => {
+      const newErrors: Record<string, string> = {};
+      Object.entries(prev).forEach(([key, value]) => {
+        const match = key.match(/^product_(\d+)_(.+)$/);
+        if (!match) {
+          newErrors[key] = value;
+          return;
+        }
+        const keyIndex = Number(match[1]);
+        if (Number.isNaN(keyIndex) || keyIndex === index) {
+          return;
+        }
+        const newIndex = keyIndex > index ? keyIndex - 1 : keyIndex;
+        newErrors[`product_${newIndex}_${match[2]}`] = value;
+      });
+      return newErrors;
+    });
+  };
+
+  const getProductErrors = (index: number) => {
+    const prefix = `product_${index}_`;
+    return Object.keys(errors).reduce<Record<string, string>>((acc, key) => {
+      if (key.startsWith(prefix)) {
+        acc[key.slice(prefix.length)] = errors[key];
+      }
+      return acc;
+    }, {});
   };
 
   const validateForSubmit = (): boolean => {
@@ -200,59 +328,93 @@ const RequestForm: React.FC = () => {
     if (formData.environment === 'other' && !formData.environmentOther?.trim()) {
       newErrors.environmentOther = t.request.specifyEnvironment + ' ' + t.common.required.toLowerCase();
     }
-    if (!formData.axleLocation) {
-      newErrors.axleLocation = t.request.axleLocation + ' ' + t.common.required.toLowerCase();
-    }
-    if (formData.axleLocation === 'other' && !formData.axleLocationOther?.trim()) {
-      newErrors.axleLocationOther = t.request.specifyAxleLocation + ' ' + t.common.required.toLowerCase();
-    }
-    if (!formData.articulationType) {
-      newErrors.articulationType = t.request.articulationType + ' ' + t.common.required.toLowerCase();
-    }
-    if (formData.articulationType === 'other' && !formData.articulationTypeOther?.trim()) {
-      newErrors.articulationTypeOther = t.request.specifyArticulationType + ' ' + t.common.required.toLowerCase();
-    }
-    if (!formData.configurationType) {
-      newErrors.configurationType = t.request.configurationType + ' ' + t.common.required.toLowerCase();
-    }
-    if (formData.configurationType === 'other' && !formData.configurationTypeOther?.trim()) {
-      newErrors.configurationTypeOther = t.request.specifyConfigurationType + ' ' + t.common.required.toLowerCase();
-    }
-    if (!formData.loadsKg) {
-      newErrors.loadsKg = t.request.loads + ' ' + t.common.required.toLowerCase();
-    }
-    if (!formData.speedsKmh) {
-      newErrors.speedsKmh = t.request.speeds + ' ' + t.common.required.toLowerCase();
-    }
-    if (!formData.tyreSize?.trim()) {
-      newErrors.tyreSize = t.request.tyreSize + ' ' + t.common.required.toLowerCase();
-    }
-    if (!formData.trackMm) {
-      newErrors.trackMm = t.request.track + ' ' + t.common.required.toLowerCase();
-    }
-    if (!formData.brakeType) {
-      newErrors.brakeType = t.request.brakeType + ' ' + t.common.required.toLowerCase();
-    }
-    if (!formData.brakeSize) {
-      newErrors.brakeSize = t.request.brakeSize + ' ' + t.common.required.toLowerCase();
-    }
-    if (!formData.suspension?.trim()) {
-      newErrors.suspension = t.request.suspension + ' ' + t.common.required.toLowerCase();
-    }
+    const products = formData.products ?? [];
+    products.forEach((product, index) => {
+      const prefix = `product_${index}_`;
 
-    // Studs/PCD validation
-    if (formData.studsPcdMode === 'standard') {
-      if (!formData.studsPcdStandardSelections?.length) {
-        newErrors.studsPcdStandardSelections = t.request.standardOptions + ' ' + t.common.required.toLowerCase();
+      if (!product.axleLocation) {
+        newErrors[`${prefix}axleLocation`] = t.request.axleLocation + ' ' + t.common.required.toLowerCase();
       }
-    } else {
-      if (!formData.studsPcdSpecialText?.trim()) {
-        newErrors.studsPcdSpecialText = t.request.specialPcd + ' ' + t.common.required.toLowerCase();
+      if (product.axleLocation === 'other' && !product.axleLocationOther?.trim()) {
+        newErrors[`${prefix}axleLocationOther`] = t.request.specifyAxleLocation + ' ' + t.common.required.toLowerCase();
       }
-    }
+      if (!product.articulationType) {
+        newErrors[`${prefix}articulationType`] = t.request.articulationType + ' ' + t.common.required.toLowerCase();
+      }
+      if (product.articulationType === 'other' && !product.articulationTypeOther?.trim()) {
+        newErrors[`${prefix}articulationTypeOther`] = t.request.specifyArticulationType + ' ' + t.common.required.toLowerCase();
+      }
+      if (!product.configurationType) {
+        newErrors[`${prefix}configurationType`] = t.request.configurationType + ' ' + t.common.required.toLowerCase();
+      }
+      if (product.configurationType === 'other' && !product.configurationTypeOther?.trim()) {
+        newErrors[`${prefix}configurationTypeOther`] = t.request.specifyConfigurationType + ' ' + t.common.required.toLowerCase();
+      }
+      if (!product.loadsKg) {
+        newErrors[`${prefix}loadsKg`] = t.request.loads + ' ' + t.common.required.toLowerCase();
+      }
+      if (!product.speedsKmh) {
+        newErrors[`${prefix}speedsKmh`] = t.request.speeds + ' ' + t.common.required.toLowerCase();
+      }
+      if (!product.tyreSize?.trim()) {
+        newErrors[`${prefix}tyreSize`] = t.request.tyreSize + ' ' + t.common.required.toLowerCase();
+      }
+      if (!product.trackMm) {
+        newErrors[`${prefix}trackMm`] = t.request.track + ' ' + t.common.required.toLowerCase();
+      }
+      if (!product.brakeType) {
+        newErrors[`${prefix}brakeType`] = t.request.brakeType + ' ' + t.common.required.toLowerCase();
+      }
+      if (!product.brakeSize) {
+        newErrors[`${prefix}brakeSize`] = t.request.brakeSize + ' ' + t.common.required.toLowerCase();
+      }
+      if (!product.suspension?.trim()) {
+        newErrors[`${prefix}suspension`] = t.request.suspension + ' ' + t.common.required.toLowerCase();
+      }
+
+      if (product.studsPcdMode === 'standard') {
+        if (!product.studsPcdStandardSelections?.length) {
+          newErrors[`${prefix}studsPcdStandardSelections`] = t.request.standardOptions + ' ' + t.common.required.toLowerCase();
+        }
+      } else {
+        if (!product.studsPcdSpecialText?.trim()) {
+          newErrors[`${prefix}studsPcdSpecialText`] = t.request.specialPcd + ' ' + t.common.required.toLowerCase();
+        }
+      }
+    });
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
+  };
+
+  const prepareRequestPayload = (data: Partial<CustomerRequest>): Partial<CustomerRequest> => {
+    const products = data.products ?? [];
+    if (!products.length) return data;
+    const primary = products[0];
+    return {
+      ...data,
+      products,
+      axleLocation: primary.axleLocation,
+      axleLocationOther: primary.axleLocationOther,
+      articulationType: primary.articulationType,
+      articulationTypeOther: primary.articulationTypeOther,
+      configurationType: primary.configurationType,
+      configurationTypeOther: primary.configurationTypeOther,
+      loadsKg: primary.loadsKg,
+      speedsKmh: primary.speedsKmh,
+      tyreSize: primary.tyreSize,
+      trackMm: primary.trackMm,
+      studsPcdMode: primary.studsPcdMode,
+      studsPcdStandardSelections: primary.studsPcdStandardSelections,
+      studsPcdSpecialText: primary.studsPcdSpecialText,
+      wheelBase: primary.wheelBase,
+      finish: primary.finish,
+      brakeType: primary.brakeType,
+      brakeSize: primary.brakeSize,
+      suspension: primary.suspension,
+      otherRequirements: primary.productComments,
+      attachments: primary.attachments,
+    };
   };
 
   const handleSaveDraft = async () => {
@@ -262,17 +424,19 @@ const RequestForm: React.FC = () => {
       await new Promise(resolve => setTimeout(resolve, 500));
       
       if (isCreateMode) {
-        const newRequest = await createRequest({
-          ...formData as any,
-          status: 'draft',
-        });
+        const newRequest = await createRequest(
+          prepareRequestPayload({
+            ...formData as any,
+            status: 'draft',
+          }) as any
+        );
         toast({
           title: t.request.draftSaved,
           description: `${t.dashboard.requests} ${newRequest.id} ${t.request.draftSavedDesc}`,
         });
         navigate(`/requests/${newRequest.id}/edit`);
       } else if (existingRequest) {
-        await updateRequest(existingRequest.id, formData);
+        await updateRequest(existingRequest.id, prepareRequestPayload(formData));
         toast({
           title: t.request.draftSaved,
           description: t.request.draftSavedDesc,
@@ -305,17 +469,19 @@ const RequestForm: React.FC = () => {
       await new Promise(resolve => setTimeout(resolve, 500));
       
       if (isCreateMode) {
-        const newRequest = await createRequest({
-          ...formData as any,
-          status: 'submitted',
-        });
+        const newRequest = await createRequest(
+          prepareRequestPayload({
+            ...formData as any,
+            status: 'submitted',
+          }) as any
+        );
         toast({
           title: t.request.requestSubmitted,
           description: `${t.dashboard.requests} ${newRequest.id} ${t.request.requestSubmittedDesc}`,
         });
         navigate('/dashboard');
       } else if (existingRequest) {
-        await updateRequest(existingRequest.id, { ...formData, status: 'submitted' });
+        await updateRequest(existingRequest.id, prepareRequestPayload({ ...formData, status: 'submitted' }));
         await updateStatus(existingRequest.id, 'submitted');
         toast({
           title: t.request.requestSubmitted,
@@ -404,7 +570,7 @@ const RequestForm: React.FC = () => {
       await new Promise(resolve => setTimeout(resolve, 500));
       
       await updateRequest(existingRequest.id, {
-        ...formData,
+        ...prepareRequestPayload(formData),
         clarificationResponse: response,
         status: 'submitted',
       });
@@ -434,6 +600,10 @@ const RequestForm: React.FC = () => {
   
   const showClarificationPanel = (user?.role === 'sales' || user?.role === 'admin') && 
     existingRequest?.status === 'clarification_needed';
+
+  const products = formData.products && formData.products.length
+    ? formData.products
+    : [getInitialProduct()];
 
   return (
     <div className="space-y-4 md:space-y-8">
@@ -499,26 +669,66 @@ const RequestForm: React.FC = () => {
               usageTypeOptions={usageTypes.map((u) => u.value)}
               environmentOptions={environments.map((e) => e.value)}
             />
-            
-            <SectionTechnicalInfo
-              formData={formData}
-              onChange={handleChange}
-              isReadOnly={isReadOnly}
-              errors={errors}
-              configurationTypeOptions={configurationTypes.map((c) => c.value)}
-              axleLocationOptions={axleLocations.map((a) => a.value)}
-              articulationTypeOptions={articulationTypes.map((a) => a.value)}
-              brakeTypeOptions={brakeTypes.map((b) => b.value)}
-              brakeSizeOptions={brakeSizes.map((b) => b.value)}
-              suspensionOptions={suspensions.map((s) => s.value)}
-            />
-            
-            <SectionAdditionalInfo
-              formData={formData}
-              onChange={handleChange}
-              isReadOnly={isReadOnly}
-              errors={errors}
-            />
+
+            {products.map((product, index) => {
+              const productLabel = `${t.request.productLabel} ${index + 1}`;
+              const productErrors = getProductErrors(index);
+
+              return (
+                <div key={`product-${index}`} className="space-y-4 md:space-y-6">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-semibold text-foreground">{productLabel}</p>
+                    {!isReadOnly && products.length > 1 && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        className="text-destructive hover:text-destructive"
+                        onClick={() => handleRemoveProduct(index)}
+                      >
+                        {t.request.removeProduct}
+                      </Button>
+                    )}
+                  </div>
+
+                  <SectionTechnicalInfo
+                    formData={product}
+                    onChange={(field, value) => handleProductChange(index, field, value)}
+                    isReadOnly={isReadOnly}
+                    errors={productErrors}
+                    configurationTypeOptions={configurationTypes.map((c) => c.value)}
+                    axleLocationOptions={axleLocations.map((a) => a.value)}
+                    articulationTypeOptions={articulationTypes.map((a) => a.value)}
+                    brakeTypeOptions={brakeTypes.map((b) => b.value)}
+                    brakeSizeOptions={brakeSizes.map((b) => b.value)}
+                    suspensionOptions={suspensions.map((s) => s.value)}
+                    title={`${t.request.technicalInfo} - ${productLabel}`}
+                    badgeLabel={`P${index + 1}`}
+                    idPrefix={`product-${index}`}
+                  />
+
+                  <SectionAdditionalInfo
+                    formData={product}
+                    onChange={(field, value) => handleProductChange(index, field, value)}
+                    isReadOnly={isReadOnly}
+                    errors={productErrors}
+                    title={`${t.request.additionalInfo} - ${productLabel}`}
+                    badgeLabel={`P${index + 1}`}
+                    idPrefix={`product-${index}`}
+                  />
+                </div>
+              );
+            })}
+
+            {!isReadOnly && (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleAddProduct}
+                className="w-full border-dashed"
+              >
+                {t.request.addProduct}
+              </Button>
+            )}
           </div>
 
           {/* Role-specific panels */}

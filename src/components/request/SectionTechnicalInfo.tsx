@@ -8,13 +8,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { CustomerRequest, BrakeType } from '@/types';
+import { RequestProduct, BrakeType } from '@/types';
 import StudsPcdBlock from './StudsPcdBlock';
 import { useLanguage } from '@/context/LanguageContext';
 
 interface SectionTechnicalInfoProps {
-  formData: Partial<CustomerRequest>;
-  onChange: (field: keyof CustomerRequest, value: any) => void;
+  formData: Partial<RequestProduct>;
+  onChange: (field: keyof RequestProduct, value: any) => void;
   isReadOnly: boolean;
   errors?: Record<string, string>;
   configurationTypeOptions?: string[];
@@ -23,6 +23,9 @@ interface SectionTechnicalInfoProps {
   brakeTypeOptions?: string[];
   brakeSizeOptions?: string[];
   suspensionOptions?: string[];
+  title?: string;
+  badgeLabel?: string;
+  idPrefix?: string;
 }
 
 const SectionTechnicalInfo: React.FC<SectionTechnicalInfoProps> = ({
@@ -36,8 +39,12 @@ const SectionTechnicalInfo: React.FC<SectionTechnicalInfoProps> = ({
   brakeTypeOptions = [],
   brakeSizeOptions = [],
   suspensionOptions = [],
+  title,
+  badgeLabel,
+  idPrefix,
 }) => {
   const { t, translateOption } = useLanguage();
+  const fieldId = (suffix: string) => (idPrefix ? `${idPrefix}-${suffix}` : suffix);
   const showConfigurationTypeOther = formData.configurationType === 'other';
   const showAxleLocationOther = formData.axleLocation === 'other';
   const showArticulationTypeOther = formData.articulationType === 'other';
@@ -60,8 +67,10 @@ const SectionTechnicalInfo: React.FC<SectionTechnicalInfoProps> = ({
   return (
     <div className="space-y-4 md:space-y-6">
       <h3 className="section-title flex items-center gap-2 text-base md:text-lg">
-        <span className="w-7 h-7 md:w-8 md:h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center text-xs md:text-sm font-bold shrink-0">4</span>
-        {t.request.technicalInfo}
+        <span className="w-7 h-7 md:w-8 md:h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center text-xs md:text-sm font-bold shrink-0">
+          {badgeLabel ?? '4'}
+        </span>
+        {title ?? t.request.technicalInfo}
       </h3>
       
       {/* Product Type Section - 3 Sub-fields (Configuration Type first) */}
@@ -70,7 +79,7 @@ const SectionTechnicalInfo: React.FC<SectionTechnicalInfoProps> = ({
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
           {/* Configuration Type (FIRST) */}
           <div className="space-y-2">
-            <Label htmlFor="configurationType" className="text-sm font-medium">
+            <Label htmlFor={fieldId('configurationType')} className="text-sm font-medium">
               {t.request.configurationType} <span className="text-destructive">*</span>
             </Label>
             {hasConfigurationOptions ? (
@@ -98,7 +107,7 @@ const SectionTechnicalInfo: React.FC<SectionTechnicalInfoProps> = ({
               </Select>
             ) : (
               <Input
-                id="configurationType"
+                id={fieldId('configurationType')}
                 value={formData.configurationType || ''}
                 onChange={(e) => onChange('configurationType', e.target.value)}
                 placeholder={t.request.specifyConfigurationType}
@@ -114,11 +123,11 @@ const SectionTechnicalInfo: React.FC<SectionTechnicalInfoProps> = ({
           {/* Configuration Type Other */}
           {showConfigurationTypeOther && hasConfigurationOptions && (
             <div className="space-y-2">
-              <Label htmlFor="configurationTypeOther" className="text-sm font-medium">
+              <Label htmlFor={fieldId('configurationTypeOther')} className="text-sm font-medium">
                 {t.request.specifyConfigurationType} <span className="text-destructive">*</span>
               </Label>
               <Input
-                id="configurationTypeOther"
+                id={fieldId('configurationTypeOther')}
                 value={formData.configurationTypeOther || ''}
                 onChange={(e) => onChange('configurationTypeOther', e.target.value)}
                 placeholder={t.request.specifyConfigurationType}
@@ -133,7 +142,7 @@ const SectionTechnicalInfo: React.FC<SectionTechnicalInfoProps> = ({
 
           {/* Axle Location */}
           <div className="space-y-2">
-            <Label htmlFor="axleLocation" className="text-sm font-medium">
+            <Label htmlFor={fieldId('axleLocation')} className="text-sm font-medium">
               {t.request.axleLocation} <span className="text-destructive">*</span>
             </Label>
             {hasAxleLocationOptions ? (
@@ -161,7 +170,7 @@ const SectionTechnicalInfo: React.FC<SectionTechnicalInfoProps> = ({
               </Select>
             ) : (
               <Input
-                id="axleLocation"
+                id={fieldId('axleLocation')}
                 value={formData.axleLocation || ''}
                 onChange={(e) => onChange('axleLocation', e.target.value)}
                 placeholder={t.request.specifyAxleLocation}
@@ -177,11 +186,11 @@ const SectionTechnicalInfo: React.FC<SectionTechnicalInfoProps> = ({
           {/* Axle Location Other */}
           {showAxleLocationOther && hasAxleLocationOptions && (
             <div className="space-y-2">
-              <Label htmlFor="axleLocationOther" className="text-sm font-medium">
+              <Label htmlFor={fieldId('axleLocationOther')} className="text-sm font-medium">
                 {t.request.specifyAxleLocation} <span className="text-destructive">*</span>
               </Label>
               <Input
-                id="axleLocationOther"
+                id={fieldId('axleLocationOther')}
                 value={formData.axleLocationOther || ''}
                 onChange={(e) => onChange('axleLocationOther', e.target.value)}
                 placeholder={t.request.specifyAxleLocation}
@@ -196,7 +205,7 @@ const SectionTechnicalInfo: React.FC<SectionTechnicalInfoProps> = ({
 
           {/* Articulation Type */}
           <div className="space-y-2">
-            <Label htmlFor="articulationType" className="text-sm font-medium">
+            <Label htmlFor={fieldId('articulationType')} className="text-sm font-medium">
               {t.request.articulationType} <span className="text-destructive">*</span>
             </Label>
             {hasArticulationOptions ? (
@@ -224,7 +233,7 @@ const SectionTechnicalInfo: React.FC<SectionTechnicalInfoProps> = ({
               </Select>
             ) : (
               <Input
-                id="articulationType"
+                id={fieldId('articulationType')}
                 value={formData.articulationType || ''}
                 onChange={(e) => onChange('articulationType', e.target.value)}
                 placeholder={t.request.specifyArticulationType}
@@ -240,11 +249,11 @@ const SectionTechnicalInfo: React.FC<SectionTechnicalInfoProps> = ({
           {/* Articulation Type Other */}
           {showArticulationTypeOther && hasArticulationOptions && (
             <div className="space-y-2">
-              <Label htmlFor="articulationTypeOther" className="text-sm font-medium">
+              <Label htmlFor={fieldId('articulationTypeOther')} className="text-sm font-medium">
                 {t.request.specifyArticulationType} <span className="text-destructive">*</span>
               </Label>
               <Input
-                id="articulationTypeOther"
+                id={fieldId('articulationTypeOther')}
                 value={formData.articulationTypeOther || ''}
                 onChange={(e) => onChange('articulationTypeOther', e.target.value)}
                 placeholder={t.request.specifyArticulationType}
@@ -262,11 +271,11 @@ const SectionTechnicalInfo: React.FC<SectionTechnicalInfoProps> = ({
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
         {/* Loads */}
         <div className="space-y-2">
-          <Label htmlFor="loadsKg" className="text-sm font-medium">
+          <Label htmlFor={fieldId('loadsKg')} className="text-sm font-medium">
             {t.request.loads} (kg) <span className="text-destructive">*</span>
           </Label>
           <Input
-            id="loadsKg"
+            id={fieldId('loadsKg')}
             type="number"
             value={formData.loadsKg || ''}
             onChange={(e) => onChange('loadsKg', e.target.value ? parseInt(e.target.value) : null)}
@@ -281,11 +290,11 @@ const SectionTechnicalInfo: React.FC<SectionTechnicalInfoProps> = ({
 
         {/* Speeds */}
         <div className="space-y-2">
-          <Label htmlFor="speedsKmh" className="text-sm font-medium">
+          <Label htmlFor={fieldId('speedsKmh')} className="text-sm font-medium">
             {t.request.speeds} (km/h) <span className="text-destructive">*</span>
           </Label>
           <Input
-            id="speedsKmh"
+            id={fieldId('speedsKmh')}
             type="number"
             value={formData.speedsKmh || ''}
             onChange={(e) => onChange('speedsKmh', e.target.value ? parseInt(e.target.value) : null)}
@@ -300,11 +309,11 @@ const SectionTechnicalInfo: React.FC<SectionTechnicalInfoProps> = ({
 
         {/* Tyre Size */}
         <div className="space-y-2">
-          <Label htmlFor="tyreSize" className="text-sm font-medium">
+          <Label htmlFor={fieldId('tyreSize')} className="text-sm font-medium">
             {t.request.tyreSize} <span className="text-destructive">*</span>
           </Label>
           <Input
-            id="tyreSize"
+            id={fieldId('tyreSize')}
             value={formData.tyreSize || ''}
             onChange={(e) => onChange('tyreSize', e.target.value)}
             placeholder={t.request.tyreSizeExample}
@@ -318,11 +327,11 @@ const SectionTechnicalInfo: React.FC<SectionTechnicalInfoProps> = ({
 
         {/* Track */}
         <div className="space-y-2">
-          <Label htmlFor="trackMm" className="text-sm font-medium">
+          <Label htmlFor={fieldId('trackMm')} className="text-sm font-medium">
             {t.request.track} (mm) <span className="text-destructive">*</span>
           </Label>
           <Input
-            id="trackMm"
+            id={fieldId('trackMm')}
             type="number"
             value={formData.trackMm || ''}
             onChange={(e) => onChange('trackMm', e.target.value ? parseInt(e.target.value) : null)}
@@ -342,16 +351,17 @@ const SectionTechnicalInfo: React.FC<SectionTechnicalInfoProps> = ({
         onChange={onChange}
         isReadOnly={isReadOnly}
         errors={errors}
+        idPrefix={idPrefix ? `${idPrefix}-studsPcd` : undefined}
       />
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
         {/* Wheel Base */}
         <div className="space-y-2">
-          <Label htmlFor="wheelBase" className="text-sm font-medium">
+          <Label htmlFor={fieldId('wheelBase')} className="text-sm font-medium">
             {t.request.wheelBase} (mm)
           </Label>
           <Input
-            id="wheelBase"
+            id={fieldId('wheelBase')}
             value={formData.wheelBase || ''}
             onChange={(e) => onChange('wheelBase', e.target.value)}
             placeholder={t.request.steeringAxleParam}
@@ -362,11 +372,11 @@ const SectionTechnicalInfo: React.FC<SectionTechnicalInfoProps> = ({
 
         {/* Finish */}
         <div className="space-y-2">
-          <Label htmlFor="finish" className="text-sm font-medium">
+          <Label htmlFor={fieldId('finish')} className="text-sm font-medium">
             {t.request.finish}
           </Label>
           <Input
-            id="finish"
+            id={fieldId('finish')}
             value={formData.finish || t.request.blackPrimerDefault}
             onChange={(e) => onChange('finish', e.target.value)}
             placeholder={t.request.blackPrimerDefault}
@@ -376,7 +386,7 @@ const SectionTechnicalInfo: React.FC<SectionTechnicalInfoProps> = ({
 
         {/* Brake Type */}
         <div className="space-y-2">
-          <Label htmlFor="brakeType" className="text-sm font-medium">
+          <Label htmlFor={fieldId('brakeType')} className="text-sm font-medium">
             {t.request.brakeType} <span className="text-destructive">*</span>
           </Label>
           {hasBrakeTypeOptions ? (
@@ -421,7 +431,7 @@ const SectionTechnicalInfo: React.FC<SectionTechnicalInfoProps> = ({
 
         {/* Brake Size */}
         <div className="space-y-2">
-          <Label htmlFor="brakeSize" className="text-sm font-medium">
+          <Label htmlFor={fieldId('brakeSize')} className="text-sm font-medium">
             {t.request.brakeSize} <span className="text-destructive">*</span>
           </Label>
           {hasBrakeSizeOptions ? (
@@ -443,7 +453,7 @@ const SectionTechnicalInfo: React.FC<SectionTechnicalInfoProps> = ({
             </Select>
           ) : (
             <Input
-              id="brakeSize"
+              id={fieldId('brakeSize')}
               value={formData.brakeSize || ''}
               onChange={(e) => onChange('brakeSize', e.target.value)}
               placeholder={t.request.selectBrakeSize}
@@ -458,7 +468,7 @@ const SectionTechnicalInfo: React.FC<SectionTechnicalInfoProps> = ({
 
         {/* Suspension */}
         <div className="lg:col-span-2 space-y-2">
-          <Label htmlFor="suspension" className="text-sm font-medium">
+          <Label htmlFor={fieldId('suspension')} className="text-sm font-medium">
             {t.request.suspension} <span className="text-destructive">*</span>
           </Label>
           {hasSuspensionOptions ? (
@@ -480,7 +490,7 @@ const SectionTechnicalInfo: React.FC<SectionTechnicalInfoProps> = ({
             </Select>
           ) : (
             <Input
-              id="suspension"
+              id={fieldId('suspension')}
               value={formData.suspension || ''}
               onChange={(e) => onChange('suspension', e.target.value)}
               placeholder={t.request.selectSuspension}

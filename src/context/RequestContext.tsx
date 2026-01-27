@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
-import { CustomerRequest, RequestStatus } from '@/types';
+import { CustomerRequest, RequestProduct, RequestStatus } from '@/types';
 import { useAuth } from './AuthContext';
 
 interface RequestContextType {
@@ -16,25 +16,84 @@ const RequestContext = createContext<RequestContextType | undefined>(undefined);
 
 const API_BASE = '/api/requests';
 
-const reviveRequest = (r: any): CustomerRequest => ({
-  ...r,
-  createdAt: r?.createdAt ? new Date(r.createdAt) : new Date(),
-  updatedAt: r?.updatedAt ? new Date(r.updatedAt) : new Date(),
-  expectedDesignReplyDate: r?.expectedDesignReplyDate ? new Date(r.expectedDesignReplyDate) : undefined,
-  expectedDeliverySelections: Array.isArray(r?.expectedDeliverySelections) ? r.expectedDeliverySelections : [],
-  attachments: Array.isArray(r?.attachments)
-    ? r.attachments.map((a: any) => ({
-        ...a,
-        uploadedAt: a?.uploadedAt ? new Date(a.uploadedAt) : new Date(),
-      }))
-    : [],
-  history: Array.isArray(r?.history)
-    ? r.history.map((h: any) => ({
-        ...h,
-        timestamp: h?.timestamp ? new Date(h.timestamp) : new Date(),
-      }))
-    : [],
+const reviveAttachment = (a: any) => ({
+  ...a,
+  uploadedAt: a?.uploadedAt ? new Date(a.uploadedAt) : new Date(),
 });
+
+const buildLegacyProduct = (r: any, attachments: any[]): RequestProduct => ({
+  axleLocation: r?.axleLocation ?? '',
+  axleLocationOther: r?.axleLocationOther ?? '',
+  articulationType: r?.articulationType ?? '',
+  articulationTypeOther: r?.articulationTypeOther ?? '',
+  configurationType: r?.configurationType ?? '',
+  configurationTypeOther: r?.configurationTypeOther ?? '',
+  loadsKg: r?.loadsKg ?? null,
+  speedsKmh: r?.speedsKmh ?? null,
+  tyreSize: r?.tyreSize ?? '',
+  trackMm: r?.trackMm ?? null,
+  studsPcdMode: r?.studsPcdMode ?? 'standard',
+  studsPcdStandardSelections: Array.isArray(r?.studsPcdStandardSelections) ? r.studsPcdStandardSelections : [],
+  studsPcdSpecialText: r?.studsPcdSpecialText ?? '',
+  wheelBase: r?.wheelBase ?? '',
+  finish: r?.finish ?? 'Black Primer default',
+  brakeType: r?.brakeType ?? null,
+  brakeSize: r?.brakeSize ?? '',
+  suspension: r?.suspension ?? '',
+  productComments: typeof r?.productComments === 'string' ? r.productComments : r?.otherRequirements ?? '',
+  attachments,
+});
+
+const reviveProduct = (p: any): RequestProduct => ({
+  axleLocation: p?.axleLocation ?? '',
+  axleLocationOther: p?.axleLocationOther ?? '',
+  articulationType: p?.articulationType ?? '',
+  articulationTypeOther: p?.articulationTypeOther ?? '',
+  configurationType: p?.configurationType ?? '',
+  configurationTypeOther: p?.configurationTypeOther ?? '',
+  loadsKg: p?.loadsKg ?? null,
+  speedsKmh: p?.speedsKmh ?? null,
+  tyreSize: p?.tyreSize ?? '',
+  trackMm: p?.trackMm ?? null,
+  studsPcdMode: p?.studsPcdMode ?? 'standard',
+  studsPcdStandardSelections: Array.isArray(p?.studsPcdStandardSelections) ? p.studsPcdStandardSelections : [],
+  studsPcdSpecialText: p?.studsPcdSpecialText ?? '',
+  wheelBase: p?.wheelBase ?? '',
+  finish: p?.finish ?? 'Black Primer default',
+  brakeType: p?.brakeType ?? null,
+  brakeSize: p?.brakeSize ?? '',
+  suspension: p?.suspension ?? '',
+  productComments: typeof p?.productComments === 'string' ? p.productComments : p?.otherRequirements ?? '',
+  attachments: Array.isArray(p?.attachments) ? p.attachments.map(reviveAttachment) : [],
+});
+
+const reviveRequest = (r: any): CustomerRequest => {
+  const attachments = Array.isArray(r?.attachments) ? r.attachments.map(reviveAttachment) : [];
+  const rawProducts = Array.isArray(r?.products) ? r.products : [];
+  const normalizedProducts = rawProducts.length
+    ? rawProducts.map(reviveProduct)
+    : [buildLegacyProduct(r, attachments)];
+
+  if (normalizedProducts.length === 1 && normalizedProducts[0].attachments.length === 0 && attachments.length) {
+    normalizedProducts[0] = { ...normalizedProducts[0], attachments };
+  }
+
+  return {
+    ...r,
+    products: normalizedProducts,
+    createdAt: r?.createdAt ? new Date(r.createdAt) : new Date(),
+    updatedAt: r?.updatedAt ? new Date(r.updatedAt) : new Date(),
+    expectedDesignReplyDate: r?.expectedDesignReplyDate ? new Date(r.expectedDesignReplyDate) : undefined,
+    expectedDeliverySelections: Array.isArray(r?.expectedDeliverySelections) ? r.expectedDeliverySelections : [],
+    attachments,
+    history: Array.isArray(r?.history)
+      ? r.history.map((h: any) => ({
+          ...h,
+          timestamp: h?.timestamp ? new Date(h.timestamp) : new Date(),
+        }))
+      : [],
+  };
+};
 
 const fetchJson = async <T,>(input: RequestInfo, init?: RequestInit): Promise<T> => {
   const res = await fetch(input, init);

@@ -4,15 +4,18 @@ import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Upload, File, X, Eye, Download } from 'lucide-react';
-import { CustomerRequest, Attachment } from '@/types';
+import { RequestProduct, Attachment } from '@/types';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/context/LanguageContext';
 
 interface SectionAdditionalInfoProps {
-  formData: Partial<CustomerRequest>;
-  onChange: (field: keyof CustomerRequest, value: any) => void;
+  formData: Partial<RequestProduct>;
+  onChange: (field: keyof RequestProduct, value: any) => void;
   isReadOnly: boolean;
   errors?: Record<string, string>;
+  title?: string;
+  badgeLabel?: string;
+  idPrefix?: string;
 }
 
 const SectionAdditionalInfo: React.FC<SectionAdditionalInfoProps> = ({
@@ -20,11 +23,15 @@ const SectionAdditionalInfo: React.FC<SectionAdditionalInfoProps> = ({
   onChange,
   isReadOnly,
   errors = {},
+  title,
+  badgeLabel,
+  idPrefix,
 }) => {
   const rimDrawingInputRef = useRef<HTMLInputElement>(null);
   const picturesInputRef = useRef<HTMLInputElement>(null);
   const [previewAttachment, setPreviewAttachment] = useState<Attachment | null>(null);
   const { t } = useLanguage();
+  const fieldId = (suffix: string) => (idPrefix ? `${idPrefix}-${suffix}` : suffix);
 
   const isImageFile = (filename: string) => {
     const ext = filename.toLowerCase().split('.').pop();
@@ -62,8 +69,10 @@ const SectionAdditionalInfo: React.FC<SectionAdditionalInfoProps> = ({
   return (
     <div className="space-y-6">
       <h3 className="section-title flex items-center gap-2">
-        <span className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center text-sm font-bold">5</span>
-        {t.request.additionalInfo}
+        <span className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center text-sm font-bold">
+          {badgeLabel ?? '5'}
+        </span>
+        {title ?? t.request.additionalInfo}
       </h3>
       
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -78,6 +87,7 @@ const SectionAdditionalInfo: React.FC<SectionAdditionalInfoProps> = ({
             <>
               <input
                 ref={rimDrawingInputRef}
+                id={fieldId('rimDrawing')}
                 type="file"
                 accept=".pdf,.jpg,.jpeg,.png"
                 multiple
@@ -152,6 +162,7 @@ const SectionAdditionalInfo: React.FC<SectionAdditionalInfoProps> = ({
             <>
               <input
                 ref={picturesInputRef}
+                id={fieldId('pictures')}
                 type="file"
                 accept="image/*,.pdf"
                 multiple
@@ -218,14 +229,14 @@ const SectionAdditionalInfo: React.FC<SectionAdditionalInfoProps> = ({
 
       {/* Other Requirements */}
       <div className="space-y-2">
-        <Label htmlFor="otherRequirements" className="text-sm font-medium">
-          {t.request.otherRequirements}
+        <Label htmlFor={fieldId('productComments')} className="text-sm font-medium">
+          {t.request.productComments}
         </Label>
         <Textarea
-          id="otherRequirements"
-          value={formData.otherRequirements || ''}
-          onChange={(e) => onChange('otherRequirements', e.target.value)}
-          placeholder={`${t.common.add} ${t.request.otherRequirements.toLowerCase()}...`}
+          id={fieldId('productComments')}
+          value={formData.productComments || ''}
+          onChange={(e) => onChange('productComments', e.target.value)}
+          placeholder={`${t.common.add} ${t.request.productComments.toLowerCase()}...`}
           rows={4}
           disabled={isReadOnly}
         />

@@ -35,6 +35,39 @@ export interface Attachment {
   uploadedBy: string;
 }
 
+export interface RequestProduct {
+  // Technical Information - Product Type (3 sub-fields)
+  axleLocation: AxleLocation | string;
+  axleLocationOther?: string;
+  articulationType: ArticulationType | string;
+  articulationTypeOther?: string;
+  configurationType: ConfigurationType | string;
+  configurationTypeOther?: string;
+
+  loadsKg: number | null;
+  speedsKmh: number | null;
+  tyreSize: string;
+  trackMm: number | null;
+
+  // Studs/PCD
+  studsPcdMode: StudsPcdMode;
+  studsPcdStandardSelections: string[];
+  studsPcdSpecialText: string;
+
+  // Other Technical
+  wheelBase: string;
+  finish: string;
+  brakeType: BrakeType | null;
+  brakeSize: string;
+  suspension: string;
+
+  // Product-specific comments
+  productComments: string;
+
+  // Attachments
+  attachments: Attachment[];
+}
+
 export interface StatusHistoryEntry {
   id: string;
   status: RequestStatus;
@@ -64,37 +97,31 @@ export interface CustomerRequest {
   usageTypeOther?: string;
   environment: string;
   environmentOther?: string;
-  
-  // Technical Information - Product Type (3 sub-fields)
-  axleLocation: AxleLocation | string;
+
+  // Product-specific data
+  products?: RequestProduct[];
+
+  // Legacy single-product fields (kept for backward compatibility)
+  axleLocation?: AxleLocation | string;
   axleLocationOther?: string;
-  articulationType: ArticulationType | string;
+  articulationType?: ArticulationType | string;
   articulationTypeOther?: string;
-  configurationType: ConfigurationType | string;
+  configurationType?: ConfigurationType | string;
   configurationTypeOther?: string;
-  
-  loadsKg: number | null;
-  speedsKmh: number | null;
-  tyreSize: string;
-  trackMm: number | null;
-  
-  // Studs/PCD
-  studsPcdMode: StudsPcdMode;
-  studsPcdStandardSelections: string[];
-  studsPcdSpecialText: string;
-  
-  // Other Technical
-  wheelBase: string;
-  finish: string;
-  brakeType: BrakeType | null;
-  brakeSize: string;
-  suspension: string;
-  
-  // Additional
-  otherRequirements: string;
-  
-  // Attachments
-  attachments: Attachment[];
+  loadsKg?: number | null;
+  speedsKmh?: number | null;
+  tyreSize?: string;
+  trackMm?: number | null;
+  studsPcdMode?: StudsPcdMode;
+  studsPcdStandardSelections?: string[];
+  studsPcdSpecialText?: string;
+  wheelBase?: string;
+  finish?: string;
+  brakeType?: BrakeType | null;
+  brakeSize?: string;
+  suspension?: string;
+  otherRequirements?: string;
+  attachments?: Attachment[];
   
   // Workflow
   status: RequestStatus;

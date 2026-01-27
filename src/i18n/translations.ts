@@ -187,6 +187,9 @@ export const translations = {
       technicalInfo: 'Technical Information',
       additionalInfo: 'Additional Information',
       productType: 'Product Type',
+      productLabel: 'Product',
+      addProduct: 'Add Product',
+      removeProduct: 'Remove Product',
 
       // Fields
       clientName: 'Client Name',
@@ -251,6 +254,7 @@ export const translations = {
       suspension: 'Suspension',
       selectSuspension: 'Select suspension',
       otherRequirements: 'Other Requirements',
+      productComments: 'Product Comments',
       attachments: 'Attachments',
 
       // Brake types
@@ -768,6 +772,9 @@ export const translations = {
       technicalInfo: 'Informations techniques',
       additionalInfo: 'Informations complémentaires',
       productType: 'Type de produit',
+      productLabel: 'Produit',
+      addProduct: 'Ajouter un produit',
+      removeProduct: 'Supprimer le produit',
 
       // Fields
       clientName: 'Nom du client',
@@ -832,6 +839,7 @@ export const translations = {
       suspension: 'Suspension',
       selectSuspension: 'Sélectionner la suspension',
       otherRequirements: 'Autres exigences',
+      productComments: 'Commentaires du produit',
       attachments: 'Pièces jointes',
 
       // Brake types
@@ -1349,6 +1357,9 @@ export const translations = {
       technicalInfo: '技术信息',
       additionalInfo: '附加信息',
       productType: '产品类型',
+      productLabel: '产品',
+      addProduct: '添加产品',
+      removeProduct: '移除产品',
 
       // Fields
       clientName: '客户名称',
@@ -1413,6 +1424,7 @@ export const translations = {
       suspension: '悬挂',
       selectSuspension: '选择悬挂',
       otherRequirements: '其他要求',
+      productComments: '产品备注',
       attachments: '附件',
 
       // Brake types

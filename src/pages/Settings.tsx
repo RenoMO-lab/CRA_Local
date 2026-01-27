@@ -217,6 +217,7 @@ const Settings: React.FC = () => {
       'usageTypeOther',
       'environment',
       'environmentOther',
+      'products',
       'axleLocation',
       'axleLocationOther',
       'articulationType',

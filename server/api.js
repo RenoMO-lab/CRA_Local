@@ -26,14 +26,124 @@ const ADMIN_LIST_CATEGORIES = new Set([
 const asyncHandler = (handler) => (req, res, next) =>
   Promise.resolve(handler(req, res, next)).catch(next);
 
+const normalizeProduct = (product) => ({
+  ...product,
+  axleLocation: product?.axleLocation ?? "",
+  axleLocationOther: product?.axleLocationOther ?? "",
+  articulationType: product?.articulationType ?? "",
+  articulationTypeOther: product?.articulationTypeOther ?? "",
+  configurationType: product?.configurationType ?? "",
+  configurationTypeOther: product?.configurationTypeOther ?? "",
+  loadsKg: product?.loadsKg ?? null,
+  speedsKmh: product?.speedsKmh ?? null,
+  tyreSize: product?.tyreSize ?? "",
+  trackMm: product?.trackMm ?? null,
+  studsPcdMode: product?.studsPcdMode ?? "standard",
+  studsPcdStandardSelections: Array.isArray(product?.studsPcdStandardSelections)
+    ? product.studsPcdStandardSelections
+    : [],
+  studsPcdSpecialText: product?.studsPcdSpecialText ?? "",
+  wheelBase: product?.wheelBase ?? "",
+  finish: product?.finish ?? "Black Primer default",
+  brakeType: product?.brakeType ?? null,
+  brakeSize: product?.brakeSize ?? "",
+  suspension: product?.suspension ?? "",
+  productComments: typeof product?.productComments === "string" ? product.productComments : product?.otherRequirements ?? "",
+  attachments: Array.isArray(product?.attachments) ? product.attachments : [],
+});
+
+const buildLegacyProduct = (data, attachments) =>
+  normalizeProduct({
+    axleLocation: data?.axleLocation,
+    axleLocationOther: data?.axleLocationOther,
+    articulationType: data?.articulationType,
+    articulationTypeOther: data?.articulationTypeOther,
+    configurationType: data?.configurationType,
+    configurationTypeOther: data?.configurationTypeOther,
+    loadsKg: data?.loadsKg,
+    speedsKmh: data?.speedsKmh,
+    tyreSize: data?.tyreSize,
+    trackMm: data?.trackMm,
+    studsPcdMode: data?.studsPcdMode,
+    studsPcdStandardSelections: data?.studsPcdStandardSelections,
+    studsPcdSpecialText: data?.studsPcdSpecialText,
+    wheelBase: data?.wheelBase,
+    finish: data?.finish,
+    brakeType: data?.brakeType,
+    brakeSize: data?.brakeSize,
+    suspension: data?.suspension,
+    productComments: data?.productComments ?? data?.otherRequirements,
+    attachments,
+  });
+
+const LEGACY_PRODUCT_FIELDS = new Set([
+  "axleLocation",
+  "axleLocationOther",
+  "articulationType",
+  "articulationTypeOther",
+  "configurationType",
+  "configurationTypeOther",
+  "loadsKg",
+  "speedsKmh",
+  "tyreSize",
+  "trackMm",
+  "studsPcdMode",
+  "studsPcdStandardSelections",
+  "studsPcdSpecialText",
+  "wheelBase",
+  "finish",
+  "brakeType",
+  "brakeSize",
+  "suspension",
+  "otherRequirements",
+  "productComments",
+  "attachments",
+]);
+
+const hasLegacyProductUpdates = (payload) => {
+  if (!payload || typeof payload !== "object") return false;
+  return Object.keys(payload).some((key) => LEGACY_PRODUCT_FIELDS.has(key));
+};
+
+const syncLegacyFromProduct = (target, product) => ({
+  ...target,
+  axleLocation: product?.axleLocation,
+  axleLocationOther: product?.axleLocationOther,
+  articulationType: product?.articulationType,
+  articulationTypeOther: product?.articulationTypeOther,
+  configurationType: product?.configurationType,
+  configurationTypeOther: product?.configurationTypeOther,
+  loadsKg: product?.loadsKg ?? null,
+  speedsKmh: product?.speedsKmh ?? null,
+  tyreSize: product?.tyreSize ?? "",
+  trackMm: product?.trackMm ?? null,
+  studsPcdMode: product?.studsPcdMode ?? "standard",
+  studsPcdStandardSelections: Array.isArray(product?.studsPcdStandardSelections)
+    ? product.studsPcdStandardSelections
+    : [],
+  studsPcdSpecialText: product?.studsPcdSpecialText ?? "",
+  wheelBase: product?.wheelBase ?? "",
+  finish: product?.finish ?? "Black Primer default",
+  brakeType: product?.brakeType ?? null,
+  brakeSize: product?.brakeSize ?? "",
+  suspension: product?.suspension ?? "",
+  otherRequirements: typeof product?.productComments === "string" ? product.productComments : target?.otherRequirements,
+  attachments: Array.isArray(product?.attachments) ? product.attachments : [],
+});
+
 const normalizeRequestData = (data, nowIso) => {
   const history = Array.isArray(data.history) ? data.history : [];
   const attachments = Array.isArray(data.attachments) ? data.attachments : [];
+  const productsPayload = Array.isArray(data.products) ? data.products : [];
+  const products = productsPayload.length
+    ? productsPayload.map(normalizeProduct)
+    : [buildLegacyProduct(data, attachments)];
 
   return {
     ...data,
     history,
     attachments,
+    products,
     createdAt: data.createdAt ?? nowIso,
     updatedAt: data.updatedAt ?? nowIso,
   };
@@ -709,14 +819,27 @@ export const apiRouter = (() => {
       }
 
       const nowIso = new Date().toISOString();
-      const updated = normalizeRequestData(
-        {
-          ...existing,
-          ...body,
-          updatedAt: nowIso,
-        },
-        nowIso
-      );
+      const merged = {
+        ...existing,
+        ...body,
+        updatedAt: nowIso,
+      };
+
+      if (!Array.isArray(body.products) && hasLegacyProductUpdates(body)) {
+        const existingProducts = Array.isArray(existing.products) ? existing.products : [];
+        const legacyProduct = buildLegacyProduct(merged, Array.isArray(merged.attachments) ? merged.attachments : []);
+        if (existingProducts.length) {
+          merged.products = [legacyProduct, ...existingProducts.slice(1)];
+        } else {
+          merged.products = [legacyProduct];
+        }
+      }
+
+      const updated = normalizeRequestData(merged, nowIso);
+
+      if (Array.isArray(updated.products) && updated.products.length) {
+        Object.assign(updated, syncLegacyFromProduct(updated, updated.products[0]));
+      }
 
       await pool
         .request()
