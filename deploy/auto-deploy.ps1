@@ -130,8 +130,8 @@ try {
     return
   }
 
-  Write-Log "Local $Branch: $local"
-  Write-Log "Remote origin/$Branch: $remote"
+  Write-Log "Local ${Branch}: $local"
+  Write-Log "Remote origin/${Branch}: $remote"
 
   if ($local -eq $remote) {
     Write-Log "No changes on origin/$Branch."
