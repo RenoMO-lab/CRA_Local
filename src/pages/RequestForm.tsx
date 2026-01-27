@@ -16,7 +16,7 @@ import CostingPanel from '@/components/request/CostingPanel';
 import ClarificationPanel from '@/components/request/ClarificationPanel';
 import StatusTimeline from '@/components/request/StatusTimeline';
 import StatusBadge from '@/components/ui/StatusBadge';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Save } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 type FormStep = 'chapters' | 'product' | 'review';
@@ -143,30 +143,6 @@ const RequestForm: React.FC = () => {
 
   const existingRequest = id ? getRequestById(id) : undefined;
 
-  // If we have an ID but no request found, redirect to dashboard
-  if (id && isLoading) {
-    return (
-      <div className="flex items-center justify-center py-16 text-muted-foreground">
-        {t.common.loading}
-      </div>
-    );
-  }
-
-  if (id && !existingRequest) {
-    return (
-      <div className="space-y-8">
-        <div className="flex flex-col items-center justify-center py-16">
-          <h1 className="text-2xl font-bold text-foreground mb-4">{t.request.requestNotFound}</h1>
-          <p className="text-muted-foreground mb-6">{t.request.requestNotFoundDesc}</p>
-          <Button onClick={() => navigate('/dashboard')}>
-            <ArrowLeft size={16} className="mr-2" />
-            {t.request.backToDashboard}
-          </Button>
-        </div>
-      </div>
-    );
-  }
-
   const [formData, setFormData] = useState<Partial<CustomerRequest>>(
     existingRequest ? { ...existingRequest, products: normalizeProducts(existingRequest) } : getInitialFormData()
   );
@@ -190,6 +166,30 @@ const RequestForm: React.FC = () => {
       setLoadedRequestId(existingRequest.id);
     }
   }, [existingRequest, loadedRequestId]);
+
+  // If we have an ID but no request found, redirect to dashboard
+  if (id && isLoading) {
+    return (
+      <div className="flex items-center justify-center py-16 text-muted-foreground">
+        {t.common.loading}
+      </div>
+    );
+  }
+
+  if (id && !existingRequest) {
+    return (
+      <div className="space-y-8">
+        <div className="flex flex-col items-center justify-center py-16">
+          <h1 className="text-2xl font-bold text-foreground mb-4">{t.request.requestNotFound}</h1>
+          <p className="text-muted-foreground mb-6">{t.request.requestNotFoundDesc}</p>
+          <Button onClick={() => navigate('/dashboard')}>
+            <ArrowLeft size={16} className="mr-2" />
+            {t.request.backToDashboard}
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   // Determine form mode
   const mode: FormMode = useMemo(() => {
@@ -744,6 +744,19 @@ const RequestForm: React.FC = () => {
     setCurrentProductIndex(index);
   };
 
+  const steps = [
+    { id: 'chapters', label: t.request.chaptersStep },
+    { id: 'product', label: productStepLabel },
+    { id: 'review', label: t.request.reviewStep },
+  ];
+
+  const stepItems = steps.map((step, index) => ({
+    ...step,
+    isActive: stepIndex === index,
+    isComplete: stepIndex > index,
+    index,
+  }));
+
   return (
     <div className="space-y-4 md:space-y-8">
       {/* Header */}
@@ -778,45 +791,50 @@ const RequestForm: React.FC = () => {
       </div>
 
       <div className="relative bg-card rounded-lg border border-border p-4 md:p-6">
-        <div className="absolute left-6 right-6 top-8 h-1 rounded-full bg-muted" />
-        <div
-          className="absolute left-6 right-6 top-8 h-1 rounded-full bg-primary origin-left transition-transform duration-300"
-          style={{ transform: `scaleX(${progressPercent})` }}
-        />
-        <div className="grid grid-cols-3 gap-2 md:gap-3 relative">
-          {[
-            { id: 'chapters', label: t.request.chaptersStep },
-            { id: 'product', label: productStepLabel },
-            { id: 'review', label: t.request.reviewStep },
-          ].map((step, index) => {
-            const isActive = stepIndex === index;
-            const isComplete = stepIndex > index;
-            return (
-              <div
-                key={step.id}
-                className="flex flex-col items-center gap-2 text-center"
-              >
+        <div className="relative">
+          <div
+            className="absolute top-1/2 h-[2px] -translate-y-1/2 rounded-full bg-muted"
+            style={{ left: 'calc(100% / 6)', right: 'calc(100% / 6)' }}
+          />
+          <div
+            className="absolute top-1/2 h-[2px] -translate-y-1/2 rounded-full bg-primary/80 origin-left transition-transform duration-300"
+            style={{
+              left: 'calc(100% / 6)',
+              right: 'calc(100% / 6)',
+              transform: `scaleX(${progressPercent})`,
+            }}
+          />
+          <div className="grid grid-cols-3 items-center relative min-h-[48px]">
+            {stepItems.map((step) => (
+              <div key={step.id} className="flex items-center justify-center">
                 <span
                   className={[
-                    'flex h-8 w-8 items-center justify-center rounded-full text-xs font-semibold shadow-sm',
-                    isActive ? 'bg-primary text-primary-foreground' : '',
-                    isComplete ? 'bg-emerald-500 text-white' : '',
-                    !isActive && !isComplete ? 'bg-muted text-muted-foreground' : '',
+                    'relative z-10 flex h-8 w-8 items-center justify-center rounded-full border text-xs font-semibold transition-colors',
+                    step.isActive ? 'bg-primary text-primary-foreground border-primary shadow-sm' : '',
+                    step.isComplete ? 'bg-card text-primary border-primary shadow-sm' : '',
+                    !step.isActive && !step.isComplete ? 'bg-muted text-muted-foreground border-border' : '',
                   ].join(' ')}
                 >
-                  {index + 1}
-                </span>
-                <span className={[
-                  'text-xs md:text-sm font-medium',
-                  isActive ? 'text-primary' : '',
-                  isComplete ? 'text-emerald-600' : '',
-                  !isActive && !isComplete ? 'text-muted-foreground' : '',
-                ].join(' ')}>
-                  {step.label}
+                  {step.index + 1}
                 </span>
               </div>
-            );
-          })}
+            ))}
+          </div>
+        </div>
+        <div className="mt-3 grid grid-cols-3 gap-2 text-center">
+          {stepItems.map((step) => (
+            <span
+              key={`${step.id}-label`}
+              className={[
+                'text-xs md:text-sm font-medium',
+                step.isActive ? 'text-primary' : '',
+                step.isComplete ? 'text-primary' : '',
+                !step.isActive && !step.isComplete ? 'text-muted-foreground' : '',
+              ].join(' ')}
+            >
+              {step.label}
+            </span>
+          ))}
         </div>
       </div>
 
@@ -1091,6 +1109,7 @@ const RequestForm: React.FC = () => {
           <Button
             type="button"
             variant="outline"
+            size="sm"
             onClick={() => navigate('/dashboard')}
             className="hidden md:inline-flex"
           >
@@ -1107,22 +1126,26 @@ const RequestForm: React.FC = () => {
                 onClick={handleSaveDraft}
                 disabled={isSaving || isSubmitting}
                 className="md:hidden"
+                aria-label={t.request.saveDraft}
               >
-                {isSaving ? t.request.saving : t.request.saveDraft}
+                <Save size={16} />
               </Button>
               <Button
                 type="button"
                 variant="outline"
+                size="sm"
                 onClick={handleSaveDraft}
                 disabled={isSaving || isSubmitting}
                 className="hidden md:inline-flex"
               >
+                <Save size={16} className="mr-2" />
                 {isSaving ? t.request.saving : t.request.saveDraft}
               </Button>
 
               {currentStep === 'chapters' && (
                 <Button
                   type="button"
+                  size="sm"
                   onClick={handleNextFromChapters}
                   disabled={isSaving || isSubmitting}
                   className="bg-primary hover:bg-primary/90 text-primary-foreground"
@@ -1136,14 +1159,17 @@ const RequestForm: React.FC = () => {
                   <Button
                     type="button"
                     variant="outline"
+                    size="sm"
                     onClick={handleBackFromProduct}
                     disabled={isSaving || isSubmitting}
                   >
+                    <ArrowLeft size={16} className="mr-2" />
                     {t.common.back}
                   </Button>
                   <Button
                     type="button"
                     variant="outline"
+                    size="sm"
                     onClick={handleAddAnotherProduct}
                     disabled={isSaving || isSubmitting}
                   >
@@ -1151,6 +1177,7 @@ const RequestForm: React.FC = () => {
                   </Button>
                   <Button
                     type="button"
+                    size="sm"
                     onClick={handleNextFromProduct}
                     disabled={isSaving || isSubmitting}
                     className="bg-primary hover:bg-primary/90 text-primary-foreground"
@@ -1165,13 +1192,16 @@ const RequestForm: React.FC = () => {
                   <Button
                     type="button"
                     variant="outline"
+                    size="sm"
                     onClick={handleBackFromReview}
                     disabled={isSaving || isSubmitting}
                   >
+                    <ArrowLeft size={16} className="mr-2" />
                     {t.common.back}
                   </Button>
                   <Button
                     type="button"
+                    size="sm"
                     onClick={handleSubmit}
                     disabled={isSubmitting || isSaving}
                     className="bg-primary hover:bg-primary/90 text-primary-foreground"

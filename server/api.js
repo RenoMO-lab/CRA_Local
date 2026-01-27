@@ -149,6 +149,16 @@ const normalizeRequestData = (data, nowIso) => {
   };
 };
 
+const safeParseRequest = (value, context) => {
+  if (!value) return null;
+  try {
+    return JSON.parse(value);
+  } catch (error) {
+    console.error("Failed to parse request data", context ?? "", error);
+    return null;
+  }
+};
+
 const parseJsonArray = (value) => {
   if (!value) return [];
   try {
@@ -293,10 +303,11 @@ const getRequestById = async (pool, id) => {
   const row = await pool
     .request()
     .input("id", sql.NVarChar(64), id)
-    .query("SELECT data FROM requests WHERE id = @id");
+    .query("SELECT id, data FROM requests WHERE id = @id");
 
   const data = row.recordset[0]?.data;
-  return data ? JSON.parse(data) : null;
+  const rowId = row.recordset[0]?.id ?? id;
+  return safeParseRequest(data, { id: rowId });
 };
 
 const fetchAdminLists = async (pool) => {
@@ -681,9 +692,12 @@ export const apiRouter = (() => {
       const pool = await getPool();
       const { recordset } = await pool
         .request()
-        .query("SELECT data FROM requests ORDER BY updated_at DESC");
+        .query("SELECT id, data FROM requests ORDER BY updated_at DESC");
 
-      res.json(recordset.map((row) => JSON.parse(row.data)));
+      const parsed = recordset
+        .map((row) => safeParseRequest(row.data, { id: row.id }))
+        .filter(Boolean);
+      res.json(parsed);
     })
   );
 

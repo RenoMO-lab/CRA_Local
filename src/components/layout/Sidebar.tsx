@@ -131,8 +131,8 @@ const Sidebar: React.FC<SidebarProps> = ({
       {/* User section */}
       <div className="p-3 border-t border-sidebar-border">
         {user && (
-          <div className={cn("p-3 bg-sidebar-accent", isCollapsed && "p-2")}>
-            <div className={cn("flex items-start gap-2", isCollapsed ? "justify-center" : "justify-between")}>
+          <div className={cn("p-3 bg-sidebar-accent rounded-lg", isCollapsed && "p-2")}>
+            <div className={cn("flex items-start gap-2", isCollapsed ? "flex-col items-center" : "justify-between")}>
               {!isCollapsed ? (
                 <div className="min-w-0">
                   <p className="text-sm font-medium text-sidebar-foreground truncate">{user.name}</p>
@@ -150,7 +150,10 @@ const Sidebar: React.FC<SidebarProps> = ({
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button
-                    className={cn("p-2 rounded-lg text-sidebar-muted hover:text-primary hover:bg-primary/10 transition-colors")}
+                    className={cn(
+                      "p-2 rounded-lg text-sidebar-muted hover:text-primary hover:bg-primary/10 transition-colors",
+                      isCollapsed && "p-1.5"
+                    )}
                     aria-label={t.common.actions}
                   >
                     <MoreVertical size={16} />
