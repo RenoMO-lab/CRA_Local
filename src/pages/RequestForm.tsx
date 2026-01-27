@@ -11,7 +11,6 @@ import SectionExpectedDelivery from '@/components/request/SectionExpectedDeliver
 import SectionClientApplication from '@/components/request/SectionClientApplication';
 import SectionTechnicalInfo from '@/components/request/SectionTechnicalInfo';
 import SectionAdditionalInfo from '@/components/request/SectionAdditionalInfo';
-import RequestActionBar from '@/components/request/RequestActionBar';
 import DesignReviewPanel from '@/components/request/DesignReviewPanel';
 import CostingPanel from '@/components/request/CostingPanel';
 import ClarificationPanel from '@/components/request/ClarificationPanel';
@@ -19,6 +18,8 @@ import StatusTimeline from '@/components/request/StatusTimeline';
 import StatusBadge from '@/components/ui/StatusBadge';
 import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+
+type FormStep = 'chapters' | 'product' | 'review';
 
 const getInitialProduct = (): RequestProduct => ({
   axleLocation: '',
@@ -41,6 +42,12 @@ const getInitialProduct = (): RequestProduct => ({
   suspension: '',
   productComments: '',
   attachments: [],
+});
+
+const cloneProductForNext = (source: RequestProduct): RequestProduct => ({
+  ...source,
+  attachments: [],
+  productComments: '',
 });
 
 const buildLegacyProduct = (request: Partial<CustomerRequest>): RequestProduct => ({
@@ -206,6 +213,27 @@ const RequestForm: React.FC = () => {
   }, [isCreateMode, existingRequest, user, isViewMode, isEditMode]);
 
   const isReadOnly = mode === 'read_only';
+  const isEditable = mode === 'create' || mode === 'draft_edit' || mode === 'clarification_edit';
+
+  const [currentStep, setCurrentStep] = useState<FormStep>(() => (isReadOnly ? 'review' : 'chapters'));
+  const [currentProductIndex, setCurrentProductIndex] = useState(0);
+
+  const products = formData.products && formData.products.length
+    ? formData.products
+    : [getInitialProduct()];
+
+  useEffect(() => {
+    if (isReadOnly) {
+      setCurrentStep('review');
+    }
+  }, [isReadOnly]);
+
+  useEffect(() => {
+    setCurrentProductIndex((prev) => {
+      if (!products.length) return 0;
+      return Math.min(prev, Math.max(products.length - 1, 0));
+    });
+  }, [products.length]);
 
   const handleChange = (field: keyof CustomerRequest, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -241,18 +269,27 @@ const RequestForm: React.FC = () => {
 
   const handleAddProduct = () => {
     if (isReadOnly) return;
+    const sourceProduct = products[currentProductIndex] ?? getInitialProduct();
+    const nextProduct = cloneProductForNext(sourceProduct);
     setFormData(prev => ({
       ...prev,
-      products: [...(prev.products ?? []), getInitialProduct()],
+      products: [...(prev.products ?? []), nextProduct],
     }));
+    setCurrentProductIndex(products.length);
   };
 
   const handleRemoveProduct = (index: number) => {
     if (isReadOnly) return;
+    const nextLength = Math.max(products.length - 1, 1);
     setFormData(prev => {
       const products = [...(prev.products ?? [])];
       products.splice(index, 1);
       return { ...prev, products: products.length ? products : [getInitialProduct()] };
+    });
+    setCurrentProductIndex((prevIndex) => {
+      if (prevIndex > index) return prevIndex - 1;
+      if (prevIndex === index) return Math.min(index, nextLength - 1);
+      return prevIndex;
     });
     setErrors(prev => {
       const newErrors: Record<string, string> = {};
@@ -283,9 +320,8 @@ const RequestForm: React.FC = () => {
     }, {});
   };
 
-  const validateForSubmit = (): boolean => {
+  const buildChapterErrors = (): Record<string, string> => {
     const newErrors: Record<string, string> = {};
-
     if (!formData.clientName?.trim()) {
       newErrors.clientName = t.request.clientName + ' ' + t.common.required.toLowerCase();
     }
@@ -328,61 +364,103 @@ const RequestForm: React.FC = () => {
     if (formData.environment === 'other' && !formData.environmentOther?.trim()) {
       newErrors.environmentOther = t.request.specifyEnvironment + ' ' + t.common.required.toLowerCase();
     }
-    const products = formData.products ?? [];
-    products.forEach((product, index) => {
-      const prefix = `product_${index}_`;
+    return newErrors;
+  };
 
-      if (!product.axleLocation) {
-        newErrors[`${prefix}axleLocation`] = t.request.axleLocation + ' ' + t.common.required.toLowerCase();
-      }
-      if (product.axleLocation === 'other' && !product.axleLocationOther?.trim()) {
-        newErrors[`${prefix}axleLocationOther`] = t.request.specifyAxleLocation + ' ' + t.common.required.toLowerCase();
-      }
-      if (!product.articulationType) {
-        newErrors[`${prefix}articulationType`] = t.request.articulationType + ' ' + t.common.required.toLowerCase();
-      }
-      if (product.articulationType === 'other' && !product.articulationTypeOther?.trim()) {
-        newErrors[`${prefix}articulationTypeOther`] = t.request.specifyArticulationType + ' ' + t.common.required.toLowerCase();
-      }
-      if (!product.configurationType) {
-        newErrors[`${prefix}configurationType`] = t.request.configurationType + ' ' + t.common.required.toLowerCase();
-      }
-      if (product.configurationType === 'other' && !product.configurationTypeOther?.trim()) {
-        newErrors[`${prefix}configurationTypeOther`] = t.request.specifyConfigurationType + ' ' + t.common.required.toLowerCase();
-      }
-      if (!product.loadsKg) {
-        newErrors[`${prefix}loadsKg`] = t.request.loads + ' ' + t.common.required.toLowerCase();
-      }
-      if (!product.speedsKmh) {
-        newErrors[`${prefix}speedsKmh`] = t.request.speeds + ' ' + t.common.required.toLowerCase();
-      }
-      if (!product.tyreSize?.trim()) {
-        newErrors[`${prefix}tyreSize`] = t.request.tyreSize + ' ' + t.common.required.toLowerCase();
-      }
-      if (!product.trackMm) {
-        newErrors[`${prefix}trackMm`] = t.request.track + ' ' + t.common.required.toLowerCase();
-      }
-      if (!product.brakeType) {
-        newErrors[`${prefix}brakeType`] = t.request.brakeType + ' ' + t.common.required.toLowerCase();
-      }
-      if (!product.brakeSize) {
-        newErrors[`${prefix}brakeSize`] = t.request.brakeSize + ' ' + t.common.required.toLowerCase();
-      }
-      if (!product.suspension?.trim()) {
-        newErrors[`${prefix}suspension`] = t.request.suspension + ' ' + t.common.required.toLowerCase();
-      }
+  const buildProductErrors = (product: RequestProduct, index: number): Record<string, string> => {
+    const newErrors: Record<string, string> = {};
+    const prefix = `product_${index}_`;
 
-      if (product.studsPcdMode === 'standard') {
-        if (!product.studsPcdStandardSelections?.length) {
-          newErrors[`${prefix}studsPcdStandardSelections`] = t.request.standardOptions + ' ' + t.common.required.toLowerCase();
-        }
-      } else {
-        if (!product.studsPcdSpecialText?.trim()) {
-          newErrors[`${prefix}studsPcdSpecialText`] = t.request.specialPcd + ' ' + t.common.required.toLowerCase();
-        }
+    if (!product.axleLocation) {
+      newErrors[`${prefix}axleLocation`] = t.request.axleLocation + ' ' + t.common.required.toLowerCase();
+    }
+    if (product.axleLocation === 'other' && !product.axleLocationOther?.trim()) {
+      newErrors[`${prefix}axleLocationOther`] = t.request.specifyAxleLocation + ' ' + t.common.required.toLowerCase();
+    }
+    if (!product.articulationType) {
+      newErrors[`${prefix}articulationType`] = t.request.articulationType + ' ' + t.common.required.toLowerCase();
+    }
+    if (product.articulationType === 'other' && !product.articulationTypeOther?.trim()) {
+      newErrors[`${prefix}articulationTypeOther`] = t.request.specifyArticulationType + ' ' + t.common.required.toLowerCase();
+    }
+    if (!product.configurationType) {
+      newErrors[`${prefix}configurationType`] = t.request.configurationType + ' ' + t.common.required.toLowerCase();
+    }
+    if (product.configurationType === 'other' && !product.configurationTypeOther?.trim()) {
+      newErrors[`${prefix}configurationTypeOther`] = t.request.specifyConfigurationType + ' ' + t.common.required.toLowerCase();
+    }
+    if (!product.loadsKg) {
+      newErrors[`${prefix}loadsKg`] = t.request.loads + ' ' + t.common.required.toLowerCase();
+    }
+    if (!product.speedsKmh) {
+      newErrors[`${prefix}speedsKmh`] = t.request.speeds + ' ' + t.common.required.toLowerCase();
+    }
+    if (!product.tyreSize?.trim()) {
+      newErrors[`${prefix}tyreSize`] = t.request.tyreSize + ' ' + t.common.required.toLowerCase();
+    }
+    if (!product.trackMm) {
+      newErrors[`${prefix}trackMm`] = t.request.track + ' ' + t.common.required.toLowerCase();
+    }
+    if (!product.brakeType) {
+      newErrors[`${prefix}brakeType`] = t.request.brakeType + ' ' + t.common.required.toLowerCase();
+    }
+    if (!product.brakeSize) {
+      newErrors[`${prefix}brakeSize`] = t.request.brakeSize + ' ' + t.common.required.toLowerCase();
+    }
+    if (!product.suspension?.trim()) {
+      newErrors[`${prefix}suspension`] = t.request.suspension + ' ' + t.common.required.toLowerCase();
+    }
+
+    if (product.studsPcdMode === 'standard') {
+      if (!product.studsPcdStandardSelections?.length) {
+        newErrors[`${prefix}studsPcdStandardSelections`] = t.request.standardOptions + ' ' + t.common.required.toLowerCase();
       }
+    } else {
+      if (!product.studsPcdSpecialText?.trim()) {
+        newErrors[`${prefix}studsPcdSpecialText`] = t.request.specialPcd + ' ' + t.common.required.toLowerCase();
+      }
+    }
+
+    return newErrors;
+  };
+
+  const validateChapters = (): boolean => {
+    const chapterErrors = buildChapterErrors();
+    setErrors(prev => {
+      const next = { ...prev };
+      Object.keys(next).forEach((key) => {
+        if (!key.startsWith('product_')) {
+          delete next[key];
+        }
+      });
+      return { ...next, ...chapterErrors };
     });
+    return Object.keys(chapterErrors).length === 0;
+  };
 
+  const validateProduct = (index: number): boolean => {
+    const product = products[index] ?? getInitialProduct();
+    const productErrors = buildProductErrors(product, index);
+    const prefix = `product_${index}_`;
+    setErrors(prev => {
+      const next = { ...prev };
+      Object.keys(next).forEach((key) => {
+        if (key.startsWith(prefix)) {
+          delete next[key];
+        }
+      });
+      return { ...next, ...productErrors };
+    });
+    return Object.keys(productErrors).length === 0;
+  };
+
+  const validateForSubmit = (): boolean => {
+    const chapterErrors = buildChapterErrors();
+    const productErrors = products.reduce<Record<string, string>>((acc, product, index) => ({
+      ...acc,
+      ...buildProductErrors(product, index),
+    }), {});
+    const newErrors = { ...chapterErrors, ...productErrors };
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -601,9 +679,64 @@ const RequestForm: React.FC = () => {
   const showClarificationPanel = (user?.role === 'sales' || user?.role === 'admin') && 
     existingRequest?.status === 'clarification_needed';
 
-  const products = formData.products && formData.products.length
-    ? formData.products
-    : [getInitialProduct()];
+  const stepIndex = currentStep === 'chapters' ? 0 : currentStep === 'product' ? 1 : 2;
+  const productStepLabel = products.length > 1
+    ? `${t.request.productsStep} (${Math.min(currentProductIndex + 1, products.length)}/${products.length})`
+    : t.request.productsStep;
+
+  const handleNextFromChapters = () => {
+    if (!validateChapters()) {
+      toast({
+        title: t.request.validationError,
+        description: t.request.fillRequiredFields,
+        variant: 'destructive',
+      });
+      return;
+    }
+    setCurrentStep('product');
+    setCurrentProductIndex(0);
+  };
+
+  const handleBackFromProduct = () => {
+    if (currentProductIndex === 0) {
+      setCurrentStep('chapters');
+      return;
+    }
+    setCurrentProductIndex((prev) => Math.max(prev - 1, 0));
+  };
+
+  const handleNextFromProduct = () => {
+    if (!validateProduct(currentProductIndex)) {
+      toast({
+        title: t.request.validationError,
+        description: t.request.fillRequiredFields,
+        variant: 'destructive',
+      });
+      return;
+    }
+    if (currentProductIndex < products.length - 1) {
+      setCurrentProductIndex((prev) => Math.min(prev + 1, products.length - 1));
+      return;
+    }
+    setCurrentStep('review');
+  };
+
+  const handleAddAnotherProduct = () => {
+    if (!validateProduct(currentProductIndex)) {
+      toast({
+        title: t.request.validationError,
+        description: t.request.fillRequiredFields,
+        variant: 'destructive',
+      });
+      return;
+    }
+    handleAddProduct();
+  };
+
+  const handleBackFromReview = () => {
+    setCurrentStep('product');
+    setCurrentProductIndex(Math.max(products.length - 1, 0));
+  };
 
   return (
     <div className="space-y-4 md:space-y-8">
@@ -638,98 +771,245 @@ const RequestForm: React.FC = () => {
         </div>
       </div>
 
+      <div className="bg-card rounded-lg border border-border p-3 md:p-4">
+        <div className="grid grid-cols-3 gap-2 md:gap-3">
+          {[
+            { id: 'chapters', label: t.request.chaptersStep },
+            { id: 'product', label: productStepLabel },
+            { id: 'review', label: t.request.reviewStep },
+          ].map((step, index) => {
+            const isActive = stepIndex === index;
+            const isComplete = stepIndex > index;
+            return (
+              <div
+                key={step.id}
+                className={[
+                  'flex items-center gap-2 rounded-md border px-2.5 py-2 text-xs md:text-sm font-medium',
+                  isActive ? 'border-primary text-primary' : '',
+                  isComplete ? 'border-emerald-500 text-emerald-600' : '',
+                  !isActive && !isComplete ? 'border-border text-muted-foreground' : '',
+                ].join(' ')}
+              >
+                <span
+                  className={[
+                    'flex h-6 w-6 items-center justify-center rounded-full text-[11px] md:text-xs font-semibold',
+                    isActive ? 'bg-primary text-primary-foreground' : '',
+                    isComplete ? 'bg-emerald-500 text-white' : '',
+                    !isActive && !isComplete ? 'bg-muted text-muted-foreground' : '',
+                  ].join(' ')}
+                >
+                  {index + 1}
+                </span>
+                <span className="truncate">{step.label}</span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
       <div className={existingRequest ? "grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-8" : "w-full"}>
         {/* Main Form */}
         <div className={existingRequest ? "lg:col-span-2 space-y-4 md:space-y-8" : "space-y-4 md:space-y-8"}>
-          <div className="bg-card rounded-lg border border-border p-4 md:p-6 space-y-6 md:space-y-8">
-            <SectionGeneralInfo
-              formData={formData}
-              onChange={handleChange}
-              isReadOnly={isReadOnly}
-              errors={errors}
-              countryOptions={countries.map(c => c.value)}
-              repeatabilityOptions={repeatabilityTypes.map((r) => r.value)}
-            />
+          {currentStep === 'chapters' && (
+            <div className="bg-card rounded-lg border border-border p-4 md:p-6 space-y-6 md:space-y-8">
+              <SectionGeneralInfo
+                formData={formData}
+                onChange={handleChange}
+                isReadOnly={isReadOnly}
+                errors={errors}
+                countryOptions={countries.map(c => c.value)}
+                repeatabilityOptions={repeatabilityTypes.map((r) => r.value)}
+              />
 
-            <SectionExpectedDelivery
-              formData={formData}
-              onChange={handleChange}
-              isReadOnly={isReadOnly}
-              errors={errors}
-              expectedDeliveryOptions={expectedDeliveryOptions.map((o) => o.value)}
-            />
-            
-            <SectionClientApplication
-              formData={formData}
-              onChange={handleChange}
-              isReadOnly={isReadOnly}
-              errors={errors}
-              applicationVehicleOptions={applicationVehicles.map(v => v.value)}
-              workingConditionOptions={workingConditions.map((c) => c.value)}
-              usageTypeOptions={usageTypes.map((u) => u.value)}
-              environmentOptions={environments.map((e) => e.value)}
-            />
+              <SectionExpectedDelivery
+                formData={formData}
+                onChange={handleChange}
+                isReadOnly={isReadOnly}
+                errors={errors}
+                expectedDeliveryOptions={expectedDeliveryOptions.map((o) => o.value)}
+              />
+              
+              <SectionClientApplication
+                formData={formData}
+                onChange={handleChange}
+                isReadOnly={isReadOnly}
+                errors={errors}
+                applicationVehicleOptions={applicationVehicles.map(v => v.value)}
+                workingConditionOptions={workingConditions.map((c) => c.value)}
+                usageTypeOptions={usageTypes.map((u) => u.value)}
+                environmentOptions={environments.map((e) => e.value)}
+              />
+            </div>
+          )}
 
-            {products.map((product, index) => {
-              const productLabel = `${t.request.productLabel} ${index + 1}`;
-              const productErrors = getProductErrors(index);
+          {currentStep === 'product' && (
+            <div className="bg-card rounded-lg border border-border p-4 md:p-6 space-y-6 md:space-y-8">
+              {(() => {
+                const product = products[currentProductIndex] ?? getInitialProduct();
+                const productLabel = `${t.request.productLabel} ${currentProductIndex + 1}`;
+                const productErrors = getProductErrors(currentProductIndex);
 
-              return (
-                <div key={`product-${index}`} className="space-y-4 md:space-y-6">
-                  <div className="flex items-center justify-between">
-                    <p className="text-sm font-semibold text-foreground">{productLabel}</p>
-                    {!isReadOnly && products.length > 1 && (
+                return (
+                  <div className="space-y-4 md:space-y-6">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <p className="text-sm font-semibold text-foreground">{productLabel}</p>
+                      {!isReadOnly && products.length > 1 && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          className="text-destructive hover:text-destructive"
+                          onClick={() => handleRemoveProduct(currentProductIndex)}
+                        >
+                          {t.request.removeProduct}
+                        </Button>
+                      )}
+                    </div>
+
+                    <SectionTechnicalInfo
+                      formData={product}
+                      onChange={(field, value) => handleProductChange(currentProductIndex, field, value)}
+                      isReadOnly={isReadOnly}
+                      errors={productErrors}
+                      configurationTypeOptions={configurationTypes.map((c) => c.value)}
+                      axleLocationOptions={axleLocations.map((a) => a.value)}
+                      articulationTypeOptions={articulationTypes.map((a) => a.value)}
+                      brakeTypeOptions={brakeTypes.map((b) => b.value)}
+                      brakeSizeOptions={brakeSizes.map((b) => b.value)}
+                      suspensionOptions={suspensions.map((s) => s.value)}
+                      title={`${t.request.technicalInfo} - ${productLabel}`}
+                      badgeLabel={`P${currentProductIndex + 1}`}
+                      idPrefix={`product-${currentProductIndex}`}
+                    />
+
+                    <SectionAdditionalInfo
+                      formData={product}
+                      onChange={(field, value) => handleProductChange(currentProductIndex, field, value)}
+                      isReadOnly={isReadOnly}
+                      errors={productErrors}
+                      title={`${t.request.additionalInfo} - ${productLabel}`}
+                      badgeLabel={`P${currentProductIndex + 1}`}
+                      idPrefix={`product-${currentProductIndex}`}
+                    />
+                  </div>
+                );
+              })()}
+            </div>
+          )}
+
+          {currentStep === 'review' && (
+            <div className="space-y-4 md:space-y-8">
+              <div className="bg-card rounded-lg border border-border p-4 md:p-6">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <h2 className="text-base md:text-lg font-semibold text-foreground">{t.request.reviewSummaryTitle}</h2>
+                    <p className="text-xs md:text-sm text-muted-foreground mt-1">{t.request.reviewSummaryDesc}</p>
+                  </div>
+                  {isEditable && (
+                    <div className="flex flex-wrap items-center gap-2">
                       <Button
                         type="button"
-                        variant="ghost"
-                        className="text-destructive hover:text-destructive"
-                        onClick={() => handleRemoveProduct(index)}
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setCurrentStep('chapters')}
                       >
-                        {t.request.removeProduct}
+                        {t.request.editChapters}
                       </Button>
-                    )}
-                  </div>
-
-                  <SectionTechnicalInfo
-                    formData={product}
-                    onChange={(field, value) => handleProductChange(index, field, value)}
-                    isReadOnly={isReadOnly}
-                    errors={productErrors}
-                    configurationTypeOptions={configurationTypes.map((c) => c.value)}
-                    axleLocationOptions={axleLocations.map((a) => a.value)}
-                    articulationTypeOptions={articulationTypes.map((a) => a.value)}
-                    brakeTypeOptions={brakeTypes.map((b) => b.value)}
-                    brakeSizeOptions={brakeSizes.map((b) => b.value)}
-                    suspensionOptions={suspensions.map((s) => s.value)}
-                    title={`${t.request.technicalInfo} - ${productLabel}`}
-                    badgeLabel={`P${index + 1}`}
-                    idPrefix={`product-${index}`}
-                  />
-
-                  <SectionAdditionalInfo
-                    formData={product}
-                    onChange={(field, value) => handleProductChange(index, field, value)}
-                    isReadOnly={isReadOnly}
-                    errors={productErrors}
-                    title={`${t.request.additionalInfo} - ${productLabel}`}
-                    badgeLabel={`P${index + 1}`}
-                    idPrefix={`product-${index}`}
-                  />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setCurrentStep('product');
+                          setCurrentProductIndex(0);
+                        }}
+                      >
+                        {t.request.editProducts}
+                      </Button>
+                    </div>
+                  )}
                 </div>
-              );
-            })}
+              </div>
 
-            {!isReadOnly && (
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handleAddProduct}
-                className="w-full border-dashed"
-              >
-                {t.request.addProduct}
-              </Button>
-            )}
-          </div>
+              <div className="bg-card rounded-lg border border-border p-4 md:p-6 space-y-6 md:space-y-8">
+                <SectionGeneralInfo
+                  formData={formData}
+                  onChange={handleChange}
+                  isReadOnly={true}
+                  errors={{}}
+                  countryOptions={countries.map(c => c.value)}
+                  repeatabilityOptions={repeatabilityTypes.map((r) => r.value)}
+                />
+
+                <SectionExpectedDelivery
+                  formData={formData}
+                  onChange={handleChange}
+                  isReadOnly={true}
+                  errors={{}}
+                  expectedDeliveryOptions={expectedDeliveryOptions.map((o) => o.value)}
+                />
+                
+                <SectionClientApplication
+                  formData={formData}
+                  onChange={handleChange}
+                  isReadOnly={true}
+                  errors={{}}
+                  applicationVehicleOptions={applicationVehicles.map(v => v.value)}
+                  workingConditionOptions={workingConditions.map((c) => c.value)}
+                  usageTypeOptions={usageTypes.map((u) => u.value)}
+                  environmentOptions={environments.map((e) => e.value)}
+                />
+              </div>
+
+              {products.map((product, index) => {
+                const productLabel = `${t.request.productLabel} ${index + 1}`;
+                return (
+                  <div key={`review-product-${index}`} className="bg-card rounded-lg border border-border p-4 md:p-6 space-y-4 md:space-y-6">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <p className="text-sm font-semibold text-foreground">{productLabel}</p>
+                      {isEditable && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setCurrentStep('product');
+                            setCurrentProductIndex(index);
+                          }}
+                        >
+                          {t.common.edit}
+                        </Button>
+                      )}
+                    </div>
+                    <SectionTechnicalInfo
+                      formData={product}
+                      onChange={(field, value) => handleProductChange(index, field, value)}
+                      isReadOnly={true}
+                      errors={{}}
+                      configurationTypeOptions={configurationTypes.map((c) => c.value)}
+                      axleLocationOptions={axleLocations.map((a) => a.value)}
+                      articulationTypeOptions={articulationTypes.map((a) => a.value)}
+                      brakeTypeOptions={brakeTypes.map((b) => b.value)}
+                      brakeSizeOptions={brakeSizes.map((b) => b.value)}
+                      suspensionOptions={suspensions.map((s) => s.value)}
+                      title={`${t.request.technicalInfo} - ${productLabel}`}
+                      badgeLabel={`P${index + 1}`}
+                      idPrefix={`review-product-${index}`}
+                    />
+
+                    <SectionAdditionalInfo
+                      formData={product}
+                      onChange={(field, value) => handleProductChange(index, field, value)}
+                      isReadOnly={true}
+                      errors={{}}
+                      title={`${t.request.additionalInfo} - ${productLabel}`}
+                      badgeLabel={`P${index + 1}`}
+                      idPrefix={`review-product-${index}`}
+                    />
+                  </div>
+                );
+              })}
+            </div>
+          )}
 
           {/* Role-specific panels */}
           {showClarificationPanel && existingRequest && (
@@ -769,13 +1049,113 @@ const RequestForm: React.FC = () => {
       </div>
 
       {/* Action Bar */}
-      <RequestActionBar
-        mode={mode}
-        onSaveDraft={handleSaveDraft}
-        onSubmit={handleSubmit}
-        isSubmitting={isSubmitting}
-        isSaving={isSaving}
-      />
+      <div className="fixed md:sticky bottom-0 left-0 right-0 bg-background/95 backdrop-blur border-t border-border py-3 md:py-4 px-3 md:px-6 z-50 md:-mx-6 md:mt-8">
+        <div className="flex items-center justify-between max-w-7xl mx-auto gap-2 flex-wrap">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => navigate('/dashboard')}
+            className="md:hidden"
+          >
+            <ArrowLeft size={16} />
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => navigate('/dashboard')}
+            className="hidden md:inline-flex"
+          >
+            <ArrowLeft size={16} className="mr-2" />
+            {t.request.backToDashboard}
+          </Button>
+
+          {isEditable && (
+            <div className="flex items-center gap-2 md:gap-3 flex-wrap">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleSaveDraft}
+                disabled={isSaving || isSubmitting}
+                className="md:hidden"
+              >
+                {isSaving ? t.request.saving : t.request.saveDraft}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleSaveDraft}
+                disabled={isSaving || isSubmitting}
+                className="hidden md:inline-flex"
+              >
+                {isSaving ? t.request.saving : t.request.saveDraft}
+              </Button>
+
+              {currentStep === 'chapters' && (
+                <Button
+                  type="button"
+                  onClick={handleNextFromChapters}
+                  disabled={isSaving || isSubmitting}
+                  className="bg-primary hover:bg-primary/90 text-primary-foreground"
+                >
+                  {t.common.next}
+                </Button>
+              )}
+
+              {currentStep === 'product' && (
+                <>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleBackFromProduct}
+                    disabled={isSaving || isSubmitting}
+                  >
+                    {t.common.back}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleAddAnotherProduct}
+                    disabled={isSaving || isSubmitting}
+                  >
+                    {t.request.addAnotherProduct}
+                  </Button>
+                  <Button
+                    type="button"
+                    onClick={handleNextFromProduct}
+                    disabled={isSaving || isSubmitting}
+                    className="bg-primary hover:bg-primary/90 text-primary-foreground"
+                  >
+                    {currentProductIndex < products.length - 1 ? t.request.nextProduct : t.request.reviewAndSubmit}
+                  </Button>
+                </>
+              )}
+
+              {currentStep === 'review' && (
+                <>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleBackFromReview}
+                    disabled={isSaving || isSubmitting}
+                  >
+                    {t.common.back}
+                  </Button>
+                  <Button
+                    type="button"
+                    onClick={handleSubmit}
+                    disabled={isSubmitting || isSaving}
+                    className="bg-primary hover:bg-primary/90 text-primary-foreground"
+                  >
+                    {isSubmitting ? t.request.submitting : t.request.submitRequest}
+                  </Button>
+                </>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 };

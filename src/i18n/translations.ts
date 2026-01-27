@@ -1,4 +1,4 @@
-export type Language = 'en' | 'zh' | 'fr';
+﻿export type Language = 'en' | 'zh' | 'fr';
 
 export const translations = {
   en: {
@@ -181,6 +181,16 @@ export const translations = {
       failedSaveDraft: 'Failed to save draft. Please try again.',
       failedSubmit: 'Failed to submit request. Please try again.',
       statusUpdated: 'Status updated',
+      chaptersStep: 'Chapters 1-3',
+      productsStep: 'Products',
+      reviewStep: 'Review & Submit',
+      reviewSummaryTitle: 'Review Summary',
+      reviewSummaryDesc: 'Confirm the details before submitting.',
+      editChapters: 'Edit Chapters',
+      editProducts: 'Edit Products',
+      addAnotherProduct: 'Add Another Product',
+      reviewAndSubmit: 'Review & Submit',
+      nextProduct: 'Next Product',
 
       // Sections
       generalInfo: 'General Information',
@@ -766,6 +776,16 @@ export const translations = {
       failedSaveDraft: 'Échec de l’enregistrement du brouillon. Veuillez réessayer.',
       failedSubmit: 'Échec de la soumission. Veuillez réessayer.',
       statusUpdated: 'Statut mis à jour',
+      chaptersStep: 'Chapitres 1 à 3',
+      productsStep: 'Produits',
+      reviewStep: 'Revoir et soumettre',
+      reviewSummaryTitle: 'Résumé',
+      reviewSummaryDesc: 'Vérifiez les informations avant de soumettre.',
+      editChapters: 'Modifier les chapitres',
+      editProducts: 'Modifier les produits',
+      addAnotherProduct: 'Ajouter un autre produit',
+      reviewAndSubmit: 'Revoir et soumettre',
+      nextProduct: 'Produit suivant',
 
       // Sections
       generalInfo: 'Informations générales',
@@ -1351,6 +1371,16 @@ export const translations = {
       failedSaveDraft: '保存草稿失败，请重试。',
       failedSubmit: '提交请求失败，请重试。',
       statusUpdated: '状态已更新',
+      chaptersStep: '章节 1-3',
+      productsStep: '产品',
+      reviewStep: '复核并提交',
+      reviewSummaryTitle: '复核摘要',
+      reviewSummaryDesc: '提交前请确认信息。',
+      editChapters: '编辑章节',
+      editProducts: '编辑产品',
+      addAnotherProduct: '添加另一个产品',
+      reviewAndSubmit: '复核并提交',
+      nextProduct: '下一个产品',
 
       // Sections
       generalInfo: '基本信息',
@@ -1763,3 +1793,4 @@ type DeepStringify<T> = {
 };
 
 export type TranslationKeys = DeepStringify<typeof translations.en>;
+
