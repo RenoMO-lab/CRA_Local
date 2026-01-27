@@ -680,6 +680,7 @@ const RequestForm: React.FC = () => {
     existingRequest?.status === 'clarification_needed';
 
   const stepIndex = currentStep === 'chapters' ? 0 : currentStep === 'product' ? 1 : 2;
+  const progressPercent = stepIndex / 2;
   const productStepLabel = products.length > 1
     ? `${t.request.productsStep} (${Math.min(currentProductIndex + 1, products.length)}/${products.length})`
     : t.request.productsStep;
@@ -738,6 +739,11 @@ const RequestForm: React.FC = () => {
     setCurrentProductIndex(Math.max(products.length - 1, 0));
   };
 
+  const handleGoToProduct = (index: number) => {
+    if (index === currentProductIndex) return;
+    setCurrentProductIndex(index);
+  };
+
   return (
     <div className="space-y-4 md:space-y-8">
       {/* Header */}
@@ -771,8 +777,13 @@ const RequestForm: React.FC = () => {
         </div>
       </div>
 
-      <div className="bg-card rounded-lg border border-border p-3 md:p-4">
-        <div className="grid grid-cols-3 gap-2 md:gap-3">
+      <div className="relative bg-card rounded-lg border border-border p-4 md:p-6">
+        <div className="absolute left-6 right-6 top-8 h-1 rounded-full bg-muted" />
+        <div
+          className="absolute left-6 right-6 top-8 h-1 rounded-full bg-primary origin-left transition-transform duration-300"
+          style={{ transform: `scaleX(${progressPercent})` }}
+        />
+        <div className="grid grid-cols-3 gap-2 md:gap-3 relative">
           {[
             { id: 'chapters', label: t.request.chaptersStep },
             { id: 'product', label: productStepLabel },
@@ -783,16 +794,11 @@ const RequestForm: React.FC = () => {
             return (
               <div
                 key={step.id}
-                className={[
-                  'flex items-center gap-2 rounded-md border px-2.5 py-2 text-xs md:text-sm font-medium',
-                  isActive ? 'border-primary text-primary' : '',
-                  isComplete ? 'border-emerald-500 text-emerald-600' : '',
-                  !isActive && !isComplete ? 'border-border text-muted-foreground' : '',
-                ].join(' ')}
+                className="flex flex-col items-center gap-2 text-center"
               >
                 <span
                   className={[
-                    'flex h-6 w-6 items-center justify-center rounded-full text-[11px] md:text-xs font-semibold',
+                    'flex h-8 w-8 items-center justify-center rounded-full text-xs font-semibold shadow-sm',
                     isActive ? 'bg-primary text-primary-foreground' : '',
                     isComplete ? 'bg-emerald-500 text-white' : '',
                     !isActive && !isComplete ? 'bg-muted text-muted-foreground' : '',
@@ -800,7 +806,14 @@ const RequestForm: React.FC = () => {
                 >
                   {index + 1}
                 </span>
-                <span className="truncate">{step.label}</span>
+                <span className={[
+                  'text-xs md:text-sm font-medium',
+                  isActive ? 'text-primary' : '',
+                  isComplete ? 'text-emerald-600' : '',
+                  !isActive && !isComplete ? 'text-muted-foreground' : '',
+                ].join(' ')}>
+                  {step.label}
+                </span>
               </div>
             );
           })}
@@ -851,6 +864,21 @@ const RequestForm: React.FC = () => {
 
                 return (
                   <div className="space-y-4 md:space-y-6">
+                    {products.length > 1 && (
+                      <div className="flex flex-wrap items-center gap-2">
+                        {products.map((_, index) => (
+                          <Button
+                            key={`product-tab-${index}`}
+                            type="button"
+                            variant={index === currentProductIndex ? 'default' : 'outline'}
+                            size="sm"
+                            onClick={() => handleGoToProduct(index)}
+                          >
+                            {t.request.productLabel} {index + 1}
+                          </Button>
+                        ))}
+                      </div>
+                    )}
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <p className="text-sm font-semibold text-foreground">{productLabel}</p>
                       {!isReadOnly && products.length > 1 && (

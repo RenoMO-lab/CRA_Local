@@ -181,7 +181,7 @@ export const translations = {
       failedSaveDraft: 'Failed to save draft. Please try again.',
       failedSubmit: 'Failed to submit request. Please try again.',
       statusUpdated: 'Status updated',
-      chaptersStep: 'Chapters 1-3',
+      chaptersStep: 'General Informations',
       productsStep: 'Products',
       reviewStep: 'Review & Submit',
       reviewSummaryTitle: 'Review Summary',
@@ -776,7 +776,7 @@ export const translations = {
       failedSaveDraft: 'Échec de l’enregistrement du brouillon. Veuillez réessayer.',
       failedSubmit: 'Échec de la soumission. Veuillez réessayer.',
       statusUpdated: 'Statut mis à jour',
-      chaptersStep: 'Chapitres 1 à 3',
+      chaptersStep: 'Informations générales',
       productsStep: 'Produits',
       reviewStep: 'Revoir et soumettre',
       reviewSummaryTitle: 'Résumé',
@@ -1371,7 +1371,7 @@ export const translations = {
       failedSaveDraft: '保存草稿失败，请重试。',
       failedSubmit: '提交请求失败，请重试。',
       statusUpdated: '状态已更新',
-      chaptersStep: '章节 1-3',
+      chaptersStep: '基本信息',
       productsStep: '产品',
       reviewStep: '复核并提交',
       reviewSummaryTitle: '复核摘要',
@@ -1793,4 +1793,5 @@ type DeepStringify<T> = {
 };
 
 export type TranslationKeys = DeepStringify<typeof translations.en>;
+
 
