@@ -167,30 +167,6 @@ const RequestForm: React.FC = () => {
     }
   }, [existingRequest, loadedRequestId]);
 
-  // If we have an ID but no request found, redirect to dashboard
-  if (id && isLoading) {
-    return (
-      <div className="flex items-center justify-center py-16 text-muted-foreground">
-        {t.common.loading}
-      </div>
-    );
-  }
-
-  if (id && !existingRequest) {
-    return (
-      <div className="space-y-8">
-        <div className="flex flex-col items-center justify-center py-16">
-          <h1 className="text-2xl font-bold text-foreground mb-4">{t.request.requestNotFound}</h1>
-          <p className="text-muted-foreground mb-6">{t.request.requestNotFoundDesc}</p>
-          <Button onClick={() => navigate('/dashboard')}>
-            <ArrowLeft size={16} className="mr-2" />
-            {t.request.backToDashboard}
-          </Button>
-        </div>
-      </div>
-    );
-  }
-
   // Determine form mode
   const mode: FormMode = useMemo(() => {
     if (isCreateMode) return 'create';
@@ -234,6 +210,30 @@ const RequestForm: React.FC = () => {
       return Math.min(prev, Math.max(products.length - 1, 0));
     });
   }, [products.length]);
+
+  // If we have an ID but no request found, redirect to dashboard
+  if (id && isLoading) {
+    return (
+      <div className="flex items-center justify-center py-16 text-muted-foreground">
+        {t.common.loading}
+      </div>
+    );
+  }
+
+  if (id && !existingRequest) {
+    return (
+      <div className="space-y-8">
+        <div className="flex flex-col items-center justify-center py-16">
+          <h1 className="text-2xl font-bold text-foreground mb-4">{t.request.requestNotFound}</h1>
+          <p className="text-muted-foreground mb-6">{t.request.requestNotFoundDesc}</p>
+          <Button onClick={() => navigate('/dashboard')}>
+            <ArrowLeft size={16} className="mr-2" />
+            {t.request.backToDashboard}
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   const handleChange = (field: keyof CustomerRequest, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
