@@ -41,6 +41,22 @@ try {
   Write-Log "Starting auto-deploy check."
 
   if (-not (Test-Path $AppPath)) {
+    if ($PSScriptRoot) {
+      $fallbackPath = Split-Path $PSScriptRoot -Parent
+      if (Test-Path $fallbackPath) {
+        Write-Log "AppPath not found: $AppPath. Falling back to $fallbackPath" "WARN"
+        $AppPath = $fallbackPath
+        $LogDir = Join-Path $AppPath "deploy\logs"
+        if (-not (Test-Path $LogDir)) {
+          New-Item -ItemType Directory -Force -Path $LogDir | Out-Null
+        }
+        $script:LogFile = Join-Path $LogDir "auto-deploy.log"
+        $lockPath = Join-Path $LogDir "auto-deploy.lock"
+      }
+    }
+  }
+
+  if (-not (Test-Path $AppPath)) {
     Write-Log "AppPath not found: $AppPath" "ERROR"
     return
   }
@@ -70,11 +86,20 @@ try {
 
   $status = git status --porcelain
   if ($status) {
-    Write-Log "Working tree dirty; skipping deploy." "WARN"
+    Write-Log ("Working tree dirty; skipping deploy. Status: {0}" -f ($status -join "; ")) "WARN"
     return
   }
 
-  git fetch --prune origin | Out-Null
+  $fetchOutput = git fetch --prune origin 2>&1
+  if ($LASTEXITCODE -ne 0) {
+    Write-Log ("git fetch failed: {0}" -f ($fetchOutput -join " ")) "ERROR"
+    return
+  }
+
+  $remoteUrl = git remote get-url origin 2>$null
+  if ($remoteUrl) {
+    Write-Log "Origin: $remoteUrl"
+  }
 
   $local = git rev-parse "refs/heads/$Branch" 2>$null
   if ($LASTEXITCODE -ne 0 -or -not $local) {
@@ -86,6 +111,9 @@ try {
     Write-Log "Remote branch 'origin/$Branch' not found." "ERROR"
     return
   }
+
+  Write-Log "Local $Branch: $local"
+  Write-Log "Remote origin/$Branch: $remote"
 
   if ($local -eq $remote) {
     Write-Log "No changes on origin/$Branch."
