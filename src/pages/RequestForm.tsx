@@ -822,7 +822,7 @@ const RequestForm: React.FC = () => {
         </div>
       </div>
 
-      <div className="relative bg-card rounded-lg border border-border p-4 md:p-6">
+      <div className="relative rounded-lg border border-border bg-gradient-to-br from-primary/5 via-card to-card p-4 md:p-6 shadow-sm">
         <div className="relative">
           <div
             className="absolute top-1/2 h-[2px] -translate-y-1/2 rounded-full bg-muted"
@@ -874,7 +874,7 @@ const RequestForm: React.FC = () => {
         {/* Main Form */}
         <div className={existingRequest ? "lg:col-span-2 space-y-4 md:space-y-8" : "space-y-4 md:space-y-8"}>
           {currentStep === 'chapters' && (
-            <div className="bg-card rounded-lg border border-border p-4 md:p-6 space-y-6 md:space-y-8">
+            <div className="rounded-lg border border-border bg-gradient-to-br from-primary/5 via-card to-card p-4 md:p-6 space-y-6 md:space-y-8 shadow-sm">
               <SectionGeneralInfo
                 formData={formData}
                 onChange={handleChange}
@@ -906,7 +906,7 @@ const RequestForm: React.FC = () => {
           )}
 
           {currentStep === 'product' && (
-            <div className="bg-card rounded-lg border border-border p-4 md:p-6 space-y-6 md:space-y-8">
+            <div className="rounded-lg border border-border bg-gradient-to-br from-primary/5 via-card to-card p-4 md:p-6 space-y-6 md:space-y-8 shadow-sm">
               {(() => {
                 const product = products[currentProductIndex] ?? getInitialProduct();
                 const productLabel = `${t.request.productLabel} ${currentProductIndex + 1}`;
@@ -976,7 +976,7 @@ const RequestForm: React.FC = () => {
 
           {currentStep === 'review' && (
             <div className="space-y-4 md:space-y-8">
-              <div className="bg-card rounded-lg border border-border p-4 md:p-6">
+              <div className="rounded-lg border border-border bg-gradient-to-br from-primary/5 via-card to-card p-4 md:p-6 shadow-sm">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div>
                     <h2 className="text-base md:text-lg font-semibold text-foreground">{t.request.reviewSummaryTitle}</h2>
@@ -1008,7 +1008,7 @@ const RequestForm: React.FC = () => {
                 </div>
               </div>
 
-              <div className="bg-card rounded-lg border border-border p-4 md:p-6 space-y-6 md:space-y-8">
+              <div className="rounded-lg border border-border bg-gradient-to-br from-primary/5 via-card to-card p-4 md:p-6 space-y-6 md:space-y-8 shadow-sm">
                 <SectionGeneralInfo
                   formData={formData}
                   onChange={handleChange}
@@ -1041,7 +1041,7 @@ const RequestForm: React.FC = () => {
               {products.map((product, index) => {
                 const productLabel = `${t.request.productLabel} ${index + 1}`;
                 return (
-                  <div key={`review-product-${index}`} className="bg-card rounded-lg border border-border p-4 md:p-6 space-y-4 md:space-y-6">
+                  <div key={`review-product-${index}`} className="rounded-lg border border-border bg-gradient-to-br from-primary/5 via-card to-card p-4 md:p-6 space-y-4 md:space-y-6 shadow-sm">
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <p className="text-sm font-semibold text-foreground">{productLabel}</p>
                       {isEditable && (
