@@ -1204,7 +1204,7 @@ const RequestForm: React.FC = () => {
             />
           )}
 
-          {existingRequest && (
+          {existingRequest && user?.role === 'design' && (
             <div className="bg-card rounded-lg border border-border p-6 space-y-4">
               <DesignResultSection
                 comments={canEditDesignResult ? designResultComments : (existingRequest.designResultComments ?? '')}
