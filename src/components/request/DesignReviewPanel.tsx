@@ -13,12 +13,14 @@ interface DesignReviewPanelProps {
   request: CustomerRequest;
   onUpdateStatus: (status: RequestStatus, data?: { comment?: string; message?: string; date?: Date }) => void;
   isUpdating: boolean;
+  showActions?: boolean;
 }
 
 const DesignReviewPanel: React.FC<DesignReviewPanelProps> = ({
   request,
   onUpdateStatus,
   isUpdating,
+  showActions = true,
 }) => {
   const [clarificationComment, setClarificationComment] = useState('');
   const [acceptanceMessage, setAcceptanceMessage] = useState('');
@@ -50,6 +52,7 @@ const DesignReviewPanel: React.FC<DesignReviewPanelProps> = ({
   const canRequestClarification = request.status === 'submitted' || request.status === 'under_review';
   const canAccept = request.status === 'submitted' || request.status === 'under_review';
   const isAccepted = ['feasibility_confirmed', 'design_result', 'in_costing', 'costing_complete', 'closed'].includes(request.status);
+  const statusLabel = t.statuses[request.status as keyof typeof t.statuses] || request.status;
   const hasReviewNotes = Boolean(
     request.clarificationComment ||
     request.acceptanceMessage ||
@@ -69,63 +72,70 @@ const DesignReviewPanel: React.FC<DesignReviewPanelProps> = ({
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-        <Button
-          variant="outline"
-          onClick={handleSetUnderReview}
-          disabled={!canSetUnderReview || isUpdating}
-          className="w-full min-w-0 justify-start text-left whitespace-normal leading-tight h-auto py-2.5"
-        >
-          <Clock size={16} className="mr-2 text-info" />
-          {t.panels.setUnderReview}
-        </Button>
+      <div className="rounded-lg border border-border bg-muted/30 p-4 space-y-2">
+        <p className="text-xs uppercase tracking-wide text-muted-foreground">{t.common.status}</p>
+        <p className="text-sm font-medium text-foreground">{statusLabel}</p>
+      </div>
 
-        <Button
-          variant="outline"
-          onClick={() => {
-            setShowClarificationForm(!showClarificationForm);
-            setShowAcceptanceForm(false);
-          }}
-          disabled={!canRequestClarification || isUpdating}
-          className={cn(
-            "w-full min-w-0 justify-start text-left whitespace-normal leading-tight h-auto py-2.5",
-            showClarificationForm && "ring-2 ring-destructive"
-          )}
-        >
-          <AlertCircle size={16} className="mr-2 text-destructive" />
-          {t.panels.requestClarification}
-        </Button>
-
-        {isAccepted ? (
+      {showActions && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           <Button
             variant="outline"
-            disabled
-            className="w-full min-w-0 justify-start text-left whitespace-normal leading-tight h-auto py-2.5 border-success/40 text-success"
+            onClick={handleSetUnderReview}
+            disabled={!canSetUnderReview || isUpdating}
+            className="w-full min-w-0 justify-start text-left whitespace-normal leading-tight h-auto py-2.5"
           >
-            <CheckCircle size={16} className="mr-2 text-success" />
-            {t.panels.applicationAccepted}
+            <Clock size={16} className="mr-2 text-info" />
+            {t.panels.setUnderReview}
           </Button>
-        ) : (
+
           <Button
             variant="outline"
             onClick={() => {
-              setShowAcceptanceForm(!showAcceptanceForm);
-              setShowClarificationForm(false);
+              setShowClarificationForm(!showClarificationForm);
+              setShowAcceptanceForm(false);
             }}
-            disabled={!canAccept || isUpdating}
+            disabled={!canRequestClarification || isUpdating}
             className={cn(
               "w-full min-w-0 justify-start text-left whitespace-normal leading-tight h-auto py-2.5",
-              showAcceptanceForm && "ring-2 ring-success"
+              showClarificationForm && "ring-2 ring-destructive"
             )}
           >
-            <CheckCircle size={16} className="mr-2 text-success" />
-            {t.panels.acceptApplication}
+            <AlertCircle size={16} className="mr-2 text-destructive" />
+            {t.panels.requestClarification}
           </Button>
-        )}
-      </div>
+
+          {isAccepted ? (
+            <Button
+              variant="outline"
+              disabled
+              className="w-full min-w-0 justify-start text-left whitespace-normal leading-tight h-auto py-2.5 border-success/40 text-success"
+            >
+              <CheckCircle size={16} className="mr-2 text-success" />
+              {t.panels.applicationAccepted}
+            </Button>
+          ) : (
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowAcceptanceForm(!showAcceptanceForm);
+                setShowClarificationForm(false);
+              }}
+              disabled={!canAccept || isUpdating}
+              className={cn(
+                "w-full min-w-0 justify-start text-left whitespace-normal leading-tight h-auto py-2.5",
+                showAcceptanceForm && "ring-2 ring-success"
+              )}
+            >
+              <CheckCircle size={16} className="mr-2 text-success" />
+              {t.panels.acceptApplication}
+            </Button>
+          )}
+        </div>
+      )}
 
       {/* Clarification Form */}
-      {showClarificationForm && (
+      {showActions && showClarificationForm && (
         <div className="p-4 rounded-lg bg-destructive/5 border border-destructive/20 space-y-4">
           <Label className="text-sm font-medium">{t.panels.clarificationRequired}</Label>
           <Textarea
@@ -151,7 +161,7 @@ const DesignReviewPanel: React.FC<DesignReviewPanelProps> = ({
       )}
 
       {/* Acceptance Form */}
-      {showAcceptanceForm && (
+      {showActions && showAcceptanceForm && (
         <div className="p-4 rounded-lg bg-success/5 border border-success/20 space-y-4">
           <div className="space-y-2">
             <Label className="text-sm font-medium">{t.panels.acceptanceRequired}</Label>

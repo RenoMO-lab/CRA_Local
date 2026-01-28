@@ -1196,11 +1196,12 @@ const RequestForm: React.FC = () => {
             />
           )}
 
-          {showDesignPanel && existingRequest && (
+          {existingRequest && (
             <DesignReviewPanel
               request={existingRequest}
               onUpdateStatus={handleDesignStatusUpdate}
               isUpdating={isUpdating}
+              showActions={showDesignPanel}
             />
           )}
 
