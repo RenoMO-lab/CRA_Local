@@ -119,7 +119,7 @@ const MetricsCharts: React.FC<MetricsChartsProps> = ({ requests }) => {
     const designerSet = new Set<string>();
     requests.forEach(r => {
       r.history.forEach(h => {
-        if (['under_review', 'clarification_needed', 'feasibility_confirmed'].includes(h.status)) {
+        if (['under_review', 'clarification_needed', 'feasibility_confirmed', 'design_result'].includes(h.status)) {
           designerSet.add(h.userName);
         }
       });
@@ -152,7 +152,7 @@ const MetricsCharts: React.FC<MetricsChartsProps> = ({ requests }) => {
         let count = 0;
         requests.forEach(r => {
           r.history.forEach(h => {
-            if (['under_review', 'clarification_needed', 'feasibility_confirmed'].includes(h.status) &&
+            if (['under_review', 'clarification_needed', 'feasibility_confirmed', 'design_result'].includes(h.status) &&
                 h.userName === designer) {
               const timestamp = new Date(h.timestamp);
               if (isWithinInterval(timestamp, { start: date, end: intervalEnd })) {
@@ -197,7 +197,7 @@ const MetricsCharts: React.FC<MetricsChartsProps> = ({ requests }) => {
       requests.forEach(r => {
         const submittedEntry = r.history.find(h => h.status === 'submitted');
         const designReplyEntry = r.history.find(h => 
-          ['under_review', 'clarification_needed', 'feasibility_confirmed'].includes(h.status)
+          ['under_review', 'clarification_needed', 'feasibility_confirmed', 'design_result'].includes(h.status)
         );
         
         if (submittedEntry && designReplyEntry) {

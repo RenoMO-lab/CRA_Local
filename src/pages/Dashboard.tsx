@@ -57,7 +57,7 @@ const Dashboard: React.FC = () => {
     // Handle compound filters
     if (activeFilter === 'in_progress') {
       return ownershipFilteredRequests.filter(r => 
-        ['submitted', 'under_review', 'in_costing'].includes(r.status)
+        ['submitted', 'under_review', 'design_result', 'in_costing'].includes(r.status)
       );
     }
     if (activeFilter === 'completed') {
@@ -93,11 +93,11 @@ const Dashboard: React.FC = () => {
           { title: t.dashboard.toReview, value: countByStatus(['submitted']), icon: FileText, filterValue: 'submitted' as FilterType },
           { title: t.dashboard.underReview, value: countByStatus(['under_review']), icon: Clock, filterValue: 'under_review' as FilterType },
           { title: t.dashboard.awaitingClarification, value: countByStatus(['clarification_needed']), icon: AlertCircle, filterValue: 'clarification_needed' as FilterType },
-          { title: t.dashboard.approved, value: countByStatus(['feasibility_confirmed']), icon: CheckCircle, filterValue: 'feasibility_confirmed' as FilterType },
+          { title: t.dashboard.approved, value: countByStatus(['feasibility_confirmed', 'design_result']), icon: CheckCircle, filterValue: 'feasibility_confirmed' as FilterType },
         ];
       case 'costing':
         return [
-          { title: t.dashboard.readyForCosting, value: countByStatus(['feasibility_confirmed']), icon: FileText, filterValue: 'feasibility_confirmed' as FilterType },
+          { title: t.dashboard.readyForCosting, value: countByStatus(['feasibility_confirmed', 'design_result']), icon: FileText, filterValue: 'feasibility_confirmed' as FilterType },
           { title: t.dashboard.inCosting, value: countByStatus(['in_costing']), icon: Clock, filterValue: 'in_costing' as FilterType },
           { title: t.dashboard.completed, value: countByStatus(['costing_complete']), icon: CheckCircle, filterValue: 'costing_complete' as FilterType },
           { title: t.dashboard.totalProcessed, value: countByStatus(['in_costing', 'costing_complete']), icon: TrendingUp, filterValue: 'all' as FilterType },
@@ -105,7 +105,7 @@ const Dashboard: React.FC = () => {
       case 'admin':
         return [
           { title: t.dashboard.totalRequests, value: requests.length, icon: FileText, filterValue: 'all' as FilterType },
-          { title: t.dashboard.inProgress, value: countByStatus(['submitted', 'under_review', 'in_costing']), icon: Clock, filterValue: 'in_progress' as FilterType },
+          { title: t.dashboard.inProgress, value: countByStatus(['submitted', 'under_review', 'design_result', 'in_costing']), icon: Clock, filterValue: 'in_progress' as FilterType },
           { title: t.dashboard.completed, value: countByStatus(['costing_complete', 'closed']), icon: CheckCircle, filterValue: 'completed' as FilterType },
           { title: t.dashboard.needsAttention, value: countByStatus(['clarification_needed']), icon: AlertCircle, filterValue: 'needs_attention' as FilterType },
         ];

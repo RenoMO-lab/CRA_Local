@@ -90,6 +90,10 @@ const reviveRequest = (r: any): CustomerRequest => {
     expectedDesignReplyDate: r?.expectedDesignReplyDate ? new Date(r.expectedDesignReplyDate) : undefined,
     expectedDeliverySelections: Array.isArray(r?.expectedDeliverySelections) ? r.expectedDeliverySelections : [],
     attachments,
+    designResultComments: r?.designResultComments ?? '',
+    designResultAttachments: Array.isArray(r?.designResultAttachments)
+      ? r.designResultAttachments.map(reviveAttachment)
+      : [],
     history: Array.isArray(r?.history)
       ? r.history.map((h: any) => ({
           ...h,

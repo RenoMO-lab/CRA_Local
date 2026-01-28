@@ -60,7 +60,7 @@ const CostingPanel: React.FC<CostingPanelProps> = ({
     onUpdateCostingData({ costingNotes });
   };
 
-  const canSetInCosting = request.status === 'feasibility_confirmed';
+  const canSetInCosting = ['feasibility_confirmed', 'design_result'].includes(request.status);
   const canComplete = request.status === 'in_costing';
   const isValidSubmission = 
     sellingPrice && 

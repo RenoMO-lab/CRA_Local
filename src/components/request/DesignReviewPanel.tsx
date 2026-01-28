@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -6,19 +6,22 @@ import { Label } from '@/components/ui/label';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar as CalendarIcon, CheckCircle, AlertCircle, Clock, Loader2 } from 'lucide-react';
-import { CustomerRequest, RequestStatus } from '@/types';
+import { Attachment, CustomerRequest, RequestStatus } from '@/types';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/context/LanguageContext';
+import DesignResultSection from '@/components/request/DesignResultSection';
 
 interface DesignReviewPanelProps {
   request: CustomerRequest;
   onUpdateStatus: (status: RequestStatus, data?: { comment?: string; message?: string; date?: Date }) => void;
+  onSaveDesignResult: (payload: { comments: string; attachments: Attachment[] }) => void | Promise<void>;
   isUpdating: boolean;
 }
 
 const DesignReviewPanel: React.FC<DesignReviewPanelProps> = ({
   request,
   onUpdateStatus,
+  onSaveDesignResult,
   isUpdating,
 }) => {
   const [clarificationComment, setClarificationComment] = useState('');
@@ -26,7 +29,16 @@ const DesignReviewPanel: React.FC<DesignReviewPanelProps> = ({
   const [expectedDate, setExpectedDate] = useState<Date>();
   const [showClarificationForm, setShowClarificationForm] = useState(false);
   const [showAcceptanceForm, setShowAcceptanceForm] = useState(false);
+  const [designResultComments, setDesignResultComments] = useState(request.designResultComments || '');
+  const [designResultAttachments, setDesignResultAttachments] = useState<Attachment[]>(
+    Array.isArray(request.designResultAttachments) ? request.designResultAttachments : []
+  );
   const { t } = useLanguage();
+
+  useEffect(() => {
+    setDesignResultComments(request.designResultComments || '');
+    setDesignResultAttachments(Array.isArray(request.designResultAttachments) ? request.designResultAttachments : []);
+  }, [request.designResultComments, request.designResultAttachments]);
 
   const handleSetUnderReview = () => {
     onUpdateStatus('under_review');
@@ -47,9 +59,17 @@ const DesignReviewPanel: React.FC<DesignReviewPanelProps> = ({
     setShowAcceptanceForm(false);
   };
 
+  const handleSaveDesignResult = () => {
+    onSaveDesignResult({
+      comments: designResultComments.trim(),
+      attachments: designResultAttachments,
+    });
+  };
+
   const canSetUnderReview = request.status === 'submitted';
   const canRequestClarification = request.status === 'submitted' || request.status === 'under_review';
   const canAccept = request.status === 'submitted' || request.status === 'under_review';
+  const canSaveDesignResult = ['submitted', 'under_review', 'feasibility_confirmed', 'design_result'].includes(request.status);
 
   return (
     <div className="bg-card rounded-lg border border-border p-6 space-y-6">
@@ -183,6 +203,27 @@ const DesignReviewPanel: React.FC<DesignReviewPanelProps> = ({
           </div>
         </div>
       )}
+
+      <div className="rounded-lg border border-border bg-muted/30 p-4 md:p-5 space-y-4">
+        <DesignResultSection
+          comments={designResultComments}
+          attachments={designResultAttachments}
+          onCommentsChange={setDesignResultComments}
+          onAttachmentsChange={setDesignResultAttachments}
+          isReadOnly={false}
+          showEmptyState={false}
+        />
+        <div className="flex justify-end">
+          <Button
+            onClick={handleSaveDesignResult}
+            disabled={isUpdating || !canSaveDesignResult}
+            className="bg-primary hover:bg-primary/90 text-primary-foreground"
+          >
+            {isUpdating && <Loader2 size={16} className="mr-2 animate-spin" />}
+            {t.panels.saveDesignResult}
+          </Button>
+        </div>
+      </div>
     </div>
   );
 };

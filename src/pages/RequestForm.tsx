@@ -5,7 +5,7 @@ import { useRequests } from '@/context/RequestContext';
 import { useAdminSettings } from '@/context/AdminSettingsContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { useToast } from '@/hooks/use-toast';
-import { CustomerRequest, FormMode, RequestStatus, RequestProduct } from '@/types';
+import { Attachment, CustomerRequest, FormMode, RequestStatus, RequestProduct } from '@/types';
 import SectionGeneralInfo from '@/components/request/SectionGeneralInfo';
 import SectionExpectedDelivery from '@/components/request/SectionExpectedDelivery';
 import SectionClientApplication from '@/components/request/SectionClientApplication';
@@ -15,6 +15,7 @@ import DesignReviewPanel from '@/components/request/DesignReviewPanel';
 import CostingPanel from '@/components/request/CostingPanel';
 import ClarificationPanel from '@/components/request/ClarificationPanel';
 import StatusTimeline from '@/components/request/StatusTimeline';
+import DesignResultSection from '@/components/request/DesignResultSection';
 import StatusBadge from '@/components/ui/StatusBadge';
 import { ArrowLeft, CheckCircle, Save } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -722,14 +723,38 @@ const RequestForm: React.FC = () => {
     }
   };
 
-  const showDesignPanel = user?.role === 'design' && existingRequest && 
-    ['submitted', 'under_review'].includes(existingRequest.status);
+  const showDesignPanel = user?.role === 'design' && existingRequest &&
+    ['submitted', 'under_review', 'feasibility_confirmed', 'design_result'].includes(existingRequest.status);
   
-  const showCostingPanel = user?.role === 'costing' && existingRequest && 
-    ['feasibility_confirmed', 'in_costing'].includes(existingRequest.status);
+  const showCostingPanel = user?.role === 'costing' && existingRequest &&
+    ['feasibility_confirmed', 'design_result', 'in_costing'].includes(existingRequest.status);
   
   const showClarificationPanel = (user?.role === 'sales' || user?.role === 'admin') && 
     existingRequest?.status === 'clarification_needed';
+
+  const handleDesignResultSave = async (payload: { comments: string; attachments: Attachment[] }) => {
+    if (!existingRequest) return;
+    setIsUpdating(true);
+    try {
+      await updateRequest(existingRequest.id, {
+        designResultComments: payload.comments,
+        designResultAttachments: payload.attachments,
+      });
+      await updateStatus(existingRequest.id, 'design_result');
+      toast({
+        title: t.request.statusUpdated,
+        description: t.request.draftSavedDesc,
+      });
+    } catch (error) {
+      toast({
+        title: t.request.error,
+        description: t.request.failedSubmit,
+        variant: 'destructive',
+      });
+    } finally {
+      setIsUpdating(false);
+    }
+  };
 
   const stepIndex = currentStep === 'chapters' ? 0 : currentStep === 'product' ? 1 : 2;
   const progressPercent = stepIndex / 2;
@@ -1106,6 +1131,19 @@ const RequestForm: React.FC = () => {
                   </div>
                 );
               })}
+
+              {existingRequest && (
+                <div className="bg-card rounded-lg border border-border p-4 md:p-6">
+                  <DesignResultSection
+                    comments={existingRequest.designResultComments ?? ''}
+                    attachments={Array.isArray(existingRequest.designResultAttachments)
+                      ? existingRequest.designResultAttachments
+                      : []}
+                    isReadOnly={true}
+                    showEmptyState={true}
+                  />
+                </div>
+              )}
             </div>
           )}
 
@@ -1122,6 +1160,7 @@ const RequestForm: React.FC = () => {
             <DesignReviewPanel
               request={existingRequest}
               onUpdateStatus={handleDesignStatusUpdate}
+              onSaveDesignResult={handleDesignResultSave}
               isUpdating={isUpdating}
             />
           )}

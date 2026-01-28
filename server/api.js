@@ -134,6 +134,9 @@ const syncLegacyFromProduct = (target, product) => ({
 const normalizeRequestData = (data, nowIso) => {
   const history = Array.isArray(data.history) ? data.history : [];
   const attachments = Array.isArray(data.attachments) ? data.attachments : [];
+  const designResultAttachments = Array.isArray(data.designResultAttachments)
+    ? data.designResultAttachments
+    : [];
   const productsPayload = Array.isArray(data.products) ? data.products : [];
   const products = productsPayload.length
     ? productsPayload.map(normalizeProduct)
@@ -143,6 +146,8 @@ const normalizeRequestData = (data, nowIso) => {
     ...data,
     history,
     attachments,
+    designResultComments: typeof data.designResultComments === "string" ? data.designResultComments : "",
+    designResultAttachments,
     products,
     createdAt: data.createdAt ?? nowIso,
     updatedAt: data.updatedAt ?? nowIso,

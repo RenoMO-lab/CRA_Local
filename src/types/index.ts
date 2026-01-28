@@ -4,6 +4,7 @@ export type RequestStatus =
   | 'draft'
   | 'submitted'
   | 'edited'
+  | 'design_result'
   | 'under_review'
   | 'clarification_needed'
   | 'feasibility_confirmed'
@@ -138,6 +139,8 @@ export interface CustomerRequest {
   designNotes?: string;
   acceptanceMessage?: string;
   expectedDesignReplyDate?: Date;
+  designResultComments?: string;
+  designResultAttachments?: Attachment[];
   
   // Clarification
   clarificationComment?: string;
@@ -203,6 +206,7 @@ export const STATUS_CONFIG: Record<RequestStatus, { label: string; color: string
   draft: { label: 'Draft', color: 'text-muted-foreground', bgColor: 'bg-muted' },
   submitted: { label: 'Submitted', color: 'text-info', bgColor: 'bg-info/10' },
   edited: { label: 'Edited', color: 'text-primary', bgColor: 'bg-primary/10' },
+  design_result: { label: 'Design Result', color: 'text-primary', bgColor: 'bg-primary/10' },
   under_review: { label: 'Under Review', color: 'text-warning', bgColor: 'bg-warning/10' },
   clarification_needed: { label: 'Clarification Needed', color: 'text-destructive', bgColor: 'bg-destructive/10' },
   feasibility_confirmed: { label: 'Feasibility Confirmed', color: 'text-success', bgColor: 'bg-success/10' },
