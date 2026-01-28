@@ -907,53 +907,55 @@ const RequestForm: React.FC = () => {
         </div>
       </div>
 
-      <div className="relative bg-card rounded-lg border border-border p-4 md:p-6">
-        <div className="relative">
-          <div
-            className="absolute top-1/2 h-[2px] -translate-y-1/2 rounded-full bg-muted"
-            style={{ left: 'calc(100% / 6)', right: 'calc(100% / 6)' }}
-          />
-          <div
-            className="absolute top-1/2 h-[2px] -translate-y-1/2 rounded-full bg-primary/80 origin-left transition-transform duration-300"
-            style={{
-              left: 'calc(100% / 6)',
-              right: 'calc(100% / 6)',
-              transform: `scaleX(${progressPercent})`,
-            }}
-          />
-          <div className="grid grid-cols-3 items-center relative min-h-[48px]">
+      {!isReadOnly && (
+        <div className="relative bg-card rounded-lg border border-border p-4 md:p-6">
+          <div className="relative">
+            <div
+              className="absolute top-1/2 h-[2px] -translate-y-1/2 rounded-full bg-muted"
+              style={{ left: 'calc(100% / 6)', right: 'calc(100% / 6)' }}
+            />
+            <div
+              className="absolute top-1/2 h-[2px] -translate-y-1/2 rounded-full bg-primary/80 origin-left transition-transform duration-300"
+              style={{
+                left: 'calc(100% / 6)',
+                right: 'calc(100% / 6)',
+                transform: `scaleX(${progressPercent})`,
+              }}
+            />
+            <div className="grid grid-cols-3 items-center relative min-h-[48px]">
+              {stepItems.map((step) => (
+                <div key={step.id} className="flex items-center justify-center">
+                  <span
+                    className={[
+                      'relative z-10 flex h-8 w-8 items-center justify-center rounded-full border text-xs font-semibold transition-colors',
+                      step.isActive ? 'bg-primary text-primary-foreground border-primary shadow-sm' : '',
+                      step.isComplete ? 'bg-card text-primary border-primary shadow-sm' : '',
+                      !step.isActive && !step.isComplete ? 'bg-muted text-muted-foreground border-border' : '',
+                    ].join(' ')}
+                  >
+                    {step.index + 1}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="mt-3 grid grid-cols-3 gap-2 text-center">
             {stepItems.map((step) => (
-              <div key={step.id} className="flex items-center justify-center">
-                <span
-                  className={[
-                    'relative z-10 flex h-8 w-8 items-center justify-center rounded-full border text-xs font-semibold transition-colors',
-                    step.isActive ? 'bg-primary text-primary-foreground border-primary shadow-sm' : '',
-                    step.isComplete ? 'bg-card text-primary border-primary shadow-sm' : '',
-                    !step.isActive && !step.isComplete ? 'bg-muted text-muted-foreground border-border' : '',
-                  ].join(' ')}
-                >
-                  {step.index + 1}
-                </span>
-              </div>
+              <span
+                key={`${step.id}-label`}
+                className={[
+                  'text-xs md:text-sm font-medium',
+                  step.isActive ? 'text-primary' : '',
+                  step.isComplete ? 'text-primary' : '',
+                  !step.isActive && !step.isComplete ? 'text-muted-foreground' : '',
+                ].join(' ')}
+              >
+                {step.label}
+              </span>
             ))}
           </div>
         </div>
-        <div className="mt-3 grid grid-cols-3 gap-2 text-center">
-          {stepItems.map((step) => (
-            <span
-              key={`${step.id}-label`}
-              className={[
-                'text-xs md:text-sm font-medium',
-                step.isActive ? 'text-primary' : '',
-                step.isComplete ? 'text-primary' : '',
-                !step.isActive && !step.isComplete ? 'text-muted-foreground' : '',
-              ].join(' ')}
-            >
-              {step.label}
-            </span>
-          ))}
-        </div>
-      </div>
+      )}
 
       <div className={existingRequest ? "grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-8" : "w-full"}>
         {/* Main Form */}
@@ -1172,18 +1174,6 @@ const RequestForm: React.FC = () => {
                 );
               })}
 
-              {existingRequest && user?.role !== 'design' && (
-                <div className="bg-card rounded-lg border border-border p-4 md:p-6">
-                  <DesignResultSection
-                    comments={existingRequest.designResultComments ?? ''}
-                    attachments={Array.isArray(existingRequest.designResultAttachments)
-                      ? existingRequest.designResultAttachments
-                      : []}
-                    isReadOnly={true}
-                    showEmptyState={true}
-                  />
-                </div>
-              )}
             </div>
           )}
 
@@ -1240,6 +1230,19 @@ const RequestForm: React.FC = () => {
                   </Button>
                 </div>
               )}
+            </div>
+          )}
+
+          {existingRequest && user?.role !== 'design' && (
+            <div className="bg-card rounded-lg border border-border p-4 md:p-6">
+              <DesignResultSection
+                comments={existingRequest.designResultComments ?? ''}
+                attachments={Array.isArray(existingRequest.designResultAttachments)
+                  ? existingRequest.designResultAttachments
+                  : []}
+                isReadOnly={true}
+                showEmptyState={true}
+              />
             </div>
           )}
 
