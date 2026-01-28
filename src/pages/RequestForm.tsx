@@ -212,7 +212,7 @@ const RequestForm: React.FC = () => {
   }, [products.length]);
 
   // If we have an ID but no request found, redirect to dashboard
-  if (id && isLoading) {
+  if (id && isLoading && !existingRequest) {
     return (
       <div className="flex items-center justify-center py-16 text-muted-foreground">
         {t.common.loading}
