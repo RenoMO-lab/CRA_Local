@@ -37,19 +37,36 @@ const DesignResultSection: React.FC<DesignResultSectionProps> = ({
     return filename.toLowerCase().endsWith('.pdf');
   };
 
-  const handleFileUpload = (files: FileList | null) => {
+  const handleFileUpload = async (files: FileList | null) => {
     if (!files || !onAttachmentsChange) return;
 
-    const newAttachments: Attachment[] = Array.from(files).map((file, index) => ({
-      id: `${Date.now()}-${index}`,
-      type: 'other',
-      filename: file.name,
-      url: URL.createObjectURL(file),
-      uploadedAt: new Date(),
-      uploadedBy: 'current-user',
-    }));
+    const readAsDataUrl = (file: File, index: number) =>
+      new Promise<Attachment>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          resolve({
+            id: `${Date.now()}-${index}`,
+            type: 'other',
+            filename: file.name,
+            url: typeof reader.result === 'string' ? reader.result : '',
+            uploadedAt: new Date(),
+            uploadedBy: 'current-user',
+          });
+        };
+        reader.onerror = () => {
+          reject(reader.error);
+        };
+        reader.readAsDataURL(file);
+      });
 
-    onAttachmentsChange([...attachments, ...newAttachments]);
+    try {
+      const newAttachments = await Promise.all(
+        Array.from(files).map((file, index) => readAsDataUrl(file, index))
+      );
+      onAttachmentsChange([...attachments, ...newAttachments]);
+    } catch {
+      // Ignore failed reads; keep existing attachments intact.
+    }
   };
 
   const removeAttachment = (id: string) => {
