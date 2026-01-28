@@ -59,7 +59,7 @@ const DesignReviewPanel: React.FC<DesignReviewPanelProps> = ({
 
   return (
     <div className="bg-card rounded-lg border border-border p-6 space-y-6">
-      <div className="flex items-center gap-2">
+      <div className="flex flex-col sm:flex-row sm:items-center gap-3">
         <div className="w-10 h-10 rounded-lg bg-warning/10 text-warning flex items-center justify-center">
           <Clock size={20} />
         </div>
@@ -69,12 +69,12 @@ const DesignReviewPanel: React.FC<DesignReviewPanelProps> = ({
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
         <Button
           variant="outline"
           onClick={handleSetUnderReview}
           disabled={!canSetUnderReview || isUpdating}
-          className="justify-start"
+          className="w-full min-w-0 justify-start text-left whitespace-normal leading-tight h-auto py-2.5"
         >
           <Clock size={16} className="mr-2 text-info" />
           {t.panels.setUnderReview}
@@ -87,7 +87,10 @@ const DesignReviewPanel: React.FC<DesignReviewPanelProps> = ({
             setShowAcceptanceForm(false);
           }}
           disabled={!canRequestClarification || isUpdating}
-          className={cn("justify-start", showClarificationForm && "ring-2 ring-destructive")}
+          className={cn(
+            "w-full min-w-0 justify-start text-left whitespace-normal leading-tight h-auto py-2.5",
+            showClarificationForm && "ring-2 ring-destructive"
+          )}
         >
           <AlertCircle size={16} className="mr-2 text-destructive" />
           {t.panels.requestClarification}
@@ -97,7 +100,7 @@ const DesignReviewPanel: React.FC<DesignReviewPanelProps> = ({
           <Button
             variant="outline"
             disabled
-            className="justify-start border-success/40 text-success"
+            className="w-full min-w-0 justify-start text-left whitespace-normal leading-tight h-auto py-2.5 border-success/40 text-success"
           >
             <CheckCircle size={16} className="mr-2 text-success" />
             {t.panels.applicationAccepted}
@@ -110,7 +113,10 @@ const DesignReviewPanel: React.FC<DesignReviewPanelProps> = ({
               setShowClarificationForm(false);
             }}
             disabled={!canAccept || isUpdating}
-            className={cn("justify-start", showAcceptanceForm && "ring-2 ring-success")}
+            className={cn(
+              "w-full min-w-0 justify-start text-left whitespace-normal leading-tight h-auto py-2.5",
+              showAcceptanceForm && "ring-2 ring-success"
+            )}
           >
             <CheckCircle size={16} className="mr-2 text-success" />
             {t.panels.acceptApplication}
