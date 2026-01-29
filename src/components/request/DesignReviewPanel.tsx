@@ -66,15 +66,17 @@ const DesignReviewPanel: React.FC<DesignReviewPanelProps> = ({
 
   const content = (
     <>
-      <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-        <div className="w-10 h-10 rounded-lg bg-warning/10 text-warning flex items-center justify-center">
-          <Clock size={20} />
+      {variant === 'card' && (
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+          <div className="w-10 h-10 rounded-lg bg-warning/10 text-warning flex items-center justify-center">
+            <Clock size={20} />
+          </div>
+          <div>
+            <h3 className="font-semibold text-foreground">{t.panels.designReviewActions}</h3>
+            <p className="text-sm text-muted-foreground">{t.panels.updateStatusDesc}</p>
+          </div>
         </div>
-        <div>
-          <h3 className="font-semibold text-foreground">{t.panels.designReviewActions}</h3>
-          <p className="text-sm text-muted-foreground">{t.panels.updateStatusDesc}</p>
-        </div>
-      </div>
+      )}
 
       <div className="rounded-lg border border-border bg-muted/30 p-4 space-y-2">
         <p className="text-xs uppercase tracking-wide text-muted-foreground">{t.common.status}</p>
