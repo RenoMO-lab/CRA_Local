@@ -38,6 +38,15 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
 import { useLanguage } from '@/context/LanguageContext';
 import { Language } from '@/i18n/translations';
 import { toast } from 'sonner';
@@ -52,6 +61,8 @@ const RequestsTable: React.FC<RequestsTableProps> = ({ requests, userRole, onDel
   const { t, translateOption, language } = useLanguage();
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [pdfLanguage, setPdfLanguage] = useState<Language>(language);
+  const [pendingPdfRequest, setPendingPdfRequest] = useState<CustomerRequest | null>(null);
+  const [isPdfDialogOpen, setIsPdfDialogOpen] = useState(false);
 
   const getPrimaryProduct = (request: CustomerRequest): Partial<RequestProduct> => {
     if (request.products && request.products.length) {
@@ -141,6 +152,19 @@ const RequestsTable: React.FC<RequestsTableProps> = ({ requests, userRole, onDel
     }
   };
 
+  const handleOpenPdfDialog = (request: CustomerRequest) => {
+    setPendingPdfRequest(request);
+    setPdfLanguage(language);
+    setIsPdfDialogOpen(true);
+  };
+
+  const handleConfirmPdfDownload = async () => {
+    if (!pendingPdfRequest) return;
+    setIsPdfDialogOpen(false);
+    await handleDownloadPDF(pendingPdfRequest, pdfLanguage);
+    setPendingPdfRequest(null);
+  };
+
   const confirmDelete = async () => {
     if (!pendingDeleteId || !onDelete) return;
     await onDelete(pendingDeleteId);
@@ -202,24 +226,10 @@ const RequestsTable: React.FC<RequestsTableProps> = ({ requests, userRole, onDel
                   {t.table.edit}
                 </Button>
               )}
-              <div className="flex items-center gap-2">
-                <div className="w-[70px]">
-                  <Select value={pdfLanguage} onValueChange={(value) => setPdfLanguage(value as Language)}>
-                    <SelectTrigger className="h-8 text-xs">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="bg-card border border-border">
-                      <SelectItem value="en">EN</SelectItem>
-                      <SelectItem value="fr">FR</SelectItem>
-                      <SelectItem value="zh">ZH</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <Button size="sm" variant="outline" onClick={() => handleDownloadPDF(request, pdfLanguage)}>
-                  <Download size={14} className="mr-2" />
-                  {t.table.download}
-                </Button>
-              </div>
+              <Button size="sm" variant="outline" onClick={() => handleOpenPdfDialog(request)}>
+                <Download size={14} className="mr-2" />
+                {t.table.download}
+              </Button>
               {canDelete(request) && onDelete && (
                 <Button size="sm" variant="ghost" className="text-destructive" onClick={() => onDelete(request.id)}>
                   <Trash2 size={14} />
@@ -267,23 +277,9 @@ const RequestsTable: React.FC<RequestsTableProps> = ({ requests, userRole, onDel
                 </TableCell>
                 <TableCell className="text-right">
                   <div className="flex items-center justify-end gap-2">
-                    <div className="inline-flex items-center gap-2">
-                      <div className="w-[70px]">
-                        <Select value={pdfLanguage} onValueChange={(value) => setPdfLanguage(value as Language)}>
-                          <SelectTrigger className="h-8 text-xs">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent className="bg-card border border-border">
-                            <SelectItem value="en">EN</SelectItem>
-                            <SelectItem value="fr">FR</SelectItem>
-                            <SelectItem value="zh">ZH</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <Button size="sm" variant="outline" onClick={() => handleDownloadPDF(request, pdfLanguage)}>
-                        <Download size={14} />
-                      </Button>
-                    </div>
+                    <Button size="sm" variant="outline" onClick={() => handleOpenPdfDialog(request)}>
+                      <Download size={14} />
+                    </Button>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
@@ -336,6 +332,36 @@ const RequestsTable: React.FC<RequestsTableProps> = ({ requests, userRole, onDel
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <Dialog open={isPdfDialogOpen} onOpenChange={setIsPdfDialogOpen}>
+        <DialogContent className="bg-card">
+          <DialogHeader>
+            <DialogTitle>{t.table.selectPdfLanguage}</DialogTitle>
+            <DialogDescription>{t.table.selectPdfLanguageDesc}</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Label className="text-sm font-medium">{t.table.pdfLanguage}</Label>
+            <Select value={pdfLanguage} onValueChange={(value) => setPdfLanguage(value as Language)}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="bg-card border border-border">
+                <SelectItem value="en">English</SelectItem>
+                <SelectItem value="fr">French</SelectItem>
+                <SelectItem value="zh">Chinese</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsPdfDialogOpen(false)}>
+              {t.common.cancel}
+            </Button>
+            <Button onClick={handleConfirmPdfDownload}>
+              {t.table.download}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
