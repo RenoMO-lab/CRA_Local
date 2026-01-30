@@ -226,10 +226,6 @@ const RequestsTable: React.FC<RequestsTableProps> = ({ requests, userRole, onDel
                   {t.table.edit}
                 </Button>
               )}
-              <Button size="sm" variant="outline" onClick={() => handleOpenPdfDialog(request)}>
-                <Download size={14} className="mr-2" />
-                {t.table.download}
-              </Button>
               {canDelete(request) && onDelete && (
                 <Button size="sm" variant="ghost" className="text-destructive" onClick={() => onDelete(request.id)}>
                   <Trash2 size={14} />
@@ -277,9 +273,6 @@ const RequestsTable: React.FC<RequestsTableProps> = ({ requests, userRole, onDel
                 </TableCell>
                 <TableCell className="text-right">
                   <div className="flex items-center justify-end gap-2">
-                    <Button size="sm" variant="outline" onClick={() => handleOpenPdfDialog(request)}>
-                      <Download size={14} />
-                    </Button>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
@@ -297,6 +290,10 @@ const RequestsTable: React.FC<RequestsTableProps> = ({ requests, userRole, onDel
                             {t.table.edit}
                           </DropdownMenuItem>
                         )}
+                        <DropdownMenuItem onClick={() => handleOpenPdfDialog(request)} className="cursor-pointer">
+                          <Download size={14} className="mr-2" />
+                          {t.table.download}
+                        </DropdownMenuItem>
                         {canDelete(request) && onDelete && (
                           <DropdownMenuItem
                             onClick={() => setPendingDeleteId(request.id)}
