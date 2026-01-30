@@ -9,8 +9,8 @@ const LIGHT_GREY = '#F3F4F6';
 const MID_GREY = '#6B7280';
 const TEXT_GREY = '#4B5563';
 const LOGO_URL = '/monroc-logo.png';
-const CHINESE_FONT_FILE = '/fonts/msyh.ttc';
-const CHINESE_FONT_NAME = 'msyh';
+const CHINESE_FONT_FILE = '/fonts/simhei.ttf';
+const CHINESE_FONT_NAME = 'simhei';
 
 let chineseFontLoaded = false;
 
@@ -26,16 +26,22 @@ const arrayBufferToBase64 = (buffer: ArrayBuffer) => {
 };
 
 const loadChineseFont = async (pdf: jsPDF) => {
-  if (chineseFontLoaded) return;
-  const response = await fetch(CHINESE_FONT_FILE);
-  if (!response.ok) {
-    throw new Error('Unable to load Chinese font for PDF.');
+  if (chineseFontLoaded) return true;
+  try {
+    const response = await fetch(CHINESE_FONT_FILE);
+    if (!response.ok) {
+      return false;
+    }
+    const fontData = await response.arrayBuffer();
+    const fontBase64 = arrayBufferToBase64(fontData);
+    pdf.addFileToVFS('simhei.ttf', fontBase64);
+    pdf.addFont('simhei.ttf', CHINESE_FONT_NAME, 'normal');
+    chineseFontLoaded = true;
+    return true;
+  } catch (error) {
+    console.warn('Could not load Chinese PDF font:', error);
+    return false;
   }
-  const fontData = await response.arrayBuffer();
-  const fontBase64 = arrayBufferToBase64(fontData);
-  pdf.addFileToVFS('msyh.ttc', fontBase64);
-  pdf.addFont('msyh.ttc', CHINESE_FONT_NAME, 'normal');
-  chineseFontLoaded = true;
 };
 
 const getPdfLanguage = (): Language => {
@@ -183,11 +189,9 @@ const formatStudsPcdSelection = (selection: string): string => {
 export const generateRequestPDF = async (request: CustomerRequest, languageOverride?: Language): Promise<void> => {
   const pdf = new jsPDF('p', 'mm', 'a4');
   const language = languageOverride ?? getPdfLanguage();
-  if (language === 'zh') {
-    await loadChineseFont(pdf);
-  }
+  const useChineseFont = language === 'zh' ? await loadChineseFont(pdf) : false;
   const setFont = (weight: 'normal' | 'bold') => {
-    if (language === 'zh') {
+    if (useChineseFont) {
       pdf.setFont(CHINESE_FONT_NAME, 'normal');
       return;
     }
@@ -355,6 +359,8 @@ export const generateRequestPDF = async (request: CustomerRequest, languageOverr
     pdf.text(lines, margin, y);
     y += lines.length * lineHeight + 4;
   };
+
+  setFont('normal');
 
   // Header band
   const headerHeight = 30;
