@@ -9,6 +9,34 @@ const LIGHT_GREY = '#F3F4F6';
 const MID_GREY = '#6B7280';
 const TEXT_GREY = '#4B5563';
 const LOGO_URL = '/monroc-logo.png';
+const CHINESE_FONT_FILE = '/fonts/msyh.ttc';
+const CHINESE_FONT_NAME = 'msyh';
+
+let chineseFontLoaded = false;
+
+const arrayBufferToBase64 = (buffer: ArrayBuffer) => {
+  let binary = '';
+  const bytes = new Uint8Array(buffer);
+  const chunkSize = 0x8000;
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    const chunk = bytes.subarray(i, i + chunkSize);
+    binary += String.fromCharCode(...chunk);
+  }
+  return btoa(binary);
+};
+
+const loadChineseFont = async (pdf: jsPDF) => {
+  if (chineseFontLoaded) return;
+  const response = await fetch(CHINESE_FONT_FILE);
+  if (!response.ok) {
+    throw new Error('Unable to load Chinese font for PDF.');
+  }
+  const fontData = await response.arrayBuffer();
+  const fontBase64 = arrayBufferToBase64(fontData);
+  pdf.addFileToVFS('msyh.ttc', fontBase64);
+  pdf.addFont('msyh.ttc', CHINESE_FONT_NAME, 'normal');
+  chineseFontLoaded = true;
+};
 
 const getPdfLanguage = (): Language => {
   try {
@@ -117,15 +145,13 @@ const formatStudsPcdSelection = (selection: string): string => {
   const match = selection.match(/^STD_(\d+)_M(\d+)_([0-9]+)_([0-9]+)$/);
   if (match) {
     const [, count, bolt, pcd1, pcd2] = match;
-    return `${count} × M${bolt} studs – PCD ${pcd1}/${pcd2}`;
+    return `${count} x M${bolt} studs - PCD ${pcd1}/${pcd2}`;
   }
   if (selection.startsWith('STD_')) {
     return selection.replace(/_/g, ' ');
   }
   return selection;
-};
-
-const buildLegacyProduct = (request: CustomerRequest): RequestProduct => ({
+};const buildLegacyProduct = (request: CustomerRequest): RequestProduct => ({
   axleLocation: request.axleLocation ?? '',
   axleLocationOther: request.axleLocationOther ?? '',
   articulationType: request.articulationType ?? '',
@@ -157,6 +183,16 @@ const buildLegacyProduct = (request: CustomerRequest): RequestProduct => ({
 export const generateRequestPDF = async (request: CustomerRequest, languageOverride?: Language): Promise<void> => {
   const pdf = new jsPDF('p', 'mm', 'a4');
   const language = languageOverride ?? getPdfLanguage();
+  if (language === 'zh') {
+    await loadChineseFont(pdf);
+  }
+  const setFont = (weight: 'normal' | 'bold') => {
+    if (language === 'zh') {
+      pdf.setFont(CHINESE_FONT_NAME, 'normal');
+      return;
+    }
+    pdf.setFont('helvetica', weight);
+  };
   const t = translations[language];
   const locale = getPdfLocale(language);
   const translateOption = (value: string) => {
@@ -204,9 +240,9 @@ export const generateRequestPDF = async (request: CustomerRequest, languageOverr
     pdf.setFontSize(sectionTitleSize);
     const redRgb = hexToRgb(MONROC_RED);
     pdf.setTextColor(redRgb.r, redRgb.g, redRgb.b);
-    pdf.setFont('helvetica', 'bold');
+    setFont('bold');
     pdf.text(title, margin, y);
-    pdf.setFont('helvetica', 'normal');
+    setFont('normal');
     y += 9;
   };
 
@@ -215,9 +251,9 @@ export const generateRequestPDF = async (request: CustomerRequest, languageOverr
     pdf.setFontSize(subsectionTitleSize);
     const greyRgb = hexToRgb(TEXT_GREY);
     pdf.setTextColor(greyRgb.r, greyRgb.g, greyRgb.b);
-    pdf.setFont('helvetica', 'bold');
+    setFont('bold');
     pdf.text(title, margin, y);
-    pdf.setFont('helvetica', 'normal');
+    setFont('normal');
     y += 7;
   };
 
@@ -257,13 +293,13 @@ export const generateRequestPDF = async (request: CustomerRequest, languageOverr
       return 0;
     }
     pdf.setFontSize(labelFontSize);
-    pdf.setFont('helvetica', 'bold');
+    setFont('bold');
     const labelRgb = hexToRgb(TEXT_GREY);
     pdf.setTextColor(labelRgb.r, labelRgb.g, labelRgb.b);
     pdf.text(label, x, yPos);
     pdf.text(':', x + measure.labelTextWidth + 2, yPos);
     pdf.setFontSize(valueFontSize);
-    pdf.setFont('helvetica', 'normal');
+    setFont('normal');
     pdf.setTextColor(0, 0, 0);
     pdf.text(pdf.splitTextToSize(measure.displayValue, measure.availableValueWidth), measure.valueX, yPos);
     return measure.lineCount;
@@ -349,18 +385,18 @@ export const generateRequestPDF = async (request: CustomerRequest, languageOverr
   // Title
   pdf.setFontSize(18);
   pdf.setTextColor(0, 0, 0);
-  pdf.setFont('helvetica', 'bold');
+  setFont('bold');
   pdf.text(t.pdf.reportTitle, margin, y);
-  pdf.setFont('helvetica', 'normal');
+  setFont('normal');
   y += 8;
 
   // Request ID + Status (combined)
   const statusLabel = t.statuses[request.status] || STATUS_CONFIG[request.status]?.label || request.status;
   pdf.setFontSize(11);
   pdf.setTextColor(0, 0, 0);
-  pdf.setFont('helvetica', 'bold');
+  setFont('bold');
   pdf.text(`${t.pdf.requestLabel}: ${request.id} | ${statusLabel}`, margin, y);
-  pdf.setFont('helvetica', 'normal');
+  setFont('normal');
   y += 8;
 
   // Divider line
@@ -557,14 +593,14 @@ export const generateRequestPDF = async (request: CustomerRequest, languageOverr
     pdf.setFillColor(headerFill.r, headerFill.g, headerFill.b);
     pdf.rect(margin, y - 4, contentWidth, 8, 'F');
     pdf.setFontSize(9);
-    pdf.setFont('helvetica', 'bold');
+    setFont('bold');
     const tableHeaderRgb = hexToRgb(TEXT_GREY);
     pdf.setTextColor(tableHeaderRgb.r, tableHeaderRgb.g, tableHeaderRgb.b);
     pdf.text(t.common.status, margin + 2, y);
     pdf.text(t.common.date, margin + statusCol + 2, y);
     pdf.text(t.pdf.byLabel, margin + statusCol + dateCol + 2, y);
     pdf.text(t.pdf.commentLabel, margin + statusCol + dateCol + byCol + 2, y);
-    pdf.setFont('helvetica', 'normal');
+    setFont('normal');
     y += 7;
 
     const filteredHistory = request.history.filter((entry, index, arr) => {
