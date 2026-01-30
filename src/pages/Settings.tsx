@@ -88,6 +88,11 @@ const Settings: React.FC = () => {
     countries,
     brakeTypes,
     brakeSizes,
+    brakePowerTypes,
+    brakeCertificates,
+    mainBodySectionTypes,
+    clientSealingRequests,
+    cupLogoOptions,
     suspensions,
     repeatabilityTypes,
     expectedDeliveryOptions,
@@ -208,6 +213,7 @@ const Settings: React.FC = () => {
       'applicationVehicleOther',
       'country',
       'countryOther',
+      'city',
       'expectedQty',
       'repeatability',
       'expectedDeliverySelections',
@@ -224,6 +230,7 @@ const Settings: React.FC = () => {
       'articulationTypeOther',
       'configurationType',
       'configurationTypeOther',
+      'quantity',
       'loadsKg',
       'speedsKmh',
       'tyreSize',
@@ -235,6 +242,11 @@ const Settings: React.FC = () => {
       'finish',
       'brakeType',
       'brakeSize',
+      'brakePowerType',
+      'brakeCertificate',
+      'mainBodySectionType',
+      'clientSealingRequest',
+      'cupLogo',
       'suspension',
       'otherRequirements',
       'attachments',
@@ -497,29 +509,79 @@ const Settings: React.FC = () => {
               onEditItem={(listName, item) => openEditItemDialog('countries', listName, item)}
               onToast={handleToast}
             />
-            <ListManager
-              title={t.settings.brakeSizes}
-              icon={SettingsIcon}
-              list={brakeSizes}
-              listName={t.settings.brakeSizes}
-              onAddItem={(value) => addListItem('brakeSizes', value)}
-              onDeleteItem={(id) => deleteListItem('brakeSizes', id)}
-              onEditItem={(listName, item) => openEditItemDialog('brakeSizes', listName, item)}
-              onToast={handleToast}
-            />
-            <ListManager
-              title={t.settings.brakeTypes}
-              icon={Circle}
-              list={brakeTypes}
-              listName={t.settings.brakeTypes}
-              onAddItem={(value) => addListItem('brakeTypes', value)}
-              onDeleteItem={(id) => deleteListItem('brakeTypes', id)}
-              onEditItem={(listName, item) => openEditItemDialog('brakeTypes', listName, item)}
-              onToast={handleToast}
-            />
-            <ListManager
-              title={t.settings.suspensions}
-              icon={SettingsIcon}
+              <ListManager
+                title={t.settings.brakeSizes}
+                icon={SettingsIcon}
+                list={brakeSizes}
+                listName={t.settings.brakeSizes}
+                onAddItem={(value) => addListItem('brakeSizes', value)}
+                onDeleteItem={(id) => deleteListItem('brakeSizes', id)}
+                onEditItem={(listName, item) => openEditItemDialog('brakeSizes', listName, item)}
+                onToast={handleToast}
+              />
+              <ListManager
+                title={t.settings.brakeTypes}
+                icon={Circle}
+                list={brakeTypes}
+                listName={t.settings.brakeTypes}
+                onAddItem={(value) => addListItem('brakeTypes', value)}
+                onDeleteItem={(id) => deleteListItem('brakeTypes', id)}
+                onEditItem={(listName, item) => openEditItemDialog('brakeTypes', listName, item)}
+                onToast={handleToast}
+              />
+              <ListManager
+                title={t.settings.brakePowerTypes}
+                icon={SettingsIcon}
+                list={brakePowerTypes}
+                listName={t.settings.brakePowerTypes}
+                onAddItem={(value) => addListItem('brakePowerTypes', value)}
+                onDeleteItem={(id) => deleteListItem('brakePowerTypes', id)}
+                onEditItem={(listName, item) => openEditItemDialog('brakePowerTypes', listName, item)}
+                onToast={handleToast}
+              />
+              <ListManager
+                title={t.settings.brakeCertificates}
+                icon={SettingsIcon}
+                list={brakeCertificates}
+                listName={t.settings.brakeCertificates}
+                onAddItem={(value) => addListItem('brakeCertificates', value)}
+                onDeleteItem={(id) => deleteListItem('brakeCertificates', id)}
+                onEditItem={(listName, item) => openEditItemDialog('brakeCertificates', listName, item)}
+                onToast={handleToast}
+              />
+              <ListManager
+                title={t.settings.mainBodySectionTypes}
+                icon={Box}
+                list={mainBodySectionTypes}
+                listName={t.settings.mainBodySectionTypes}
+                onAddItem={(value) => addListItem('mainBodySectionTypes', value)}
+                onDeleteItem={(id) => deleteListItem('mainBodySectionTypes', id)}
+                onEditItem={(listName, item) => openEditItemDialog('mainBodySectionTypes', listName, item)}
+                onToast={handleToast}
+              />
+              <ListManager
+                title={t.settings.clientSealingRequests}
+                icon={SettingsIcon}
+                list={clientSealingRequests}
+                listName={t.settings.clientSealingRequests}
+                onAddItem={(value) => addListItem('clientSealingRequests', value)}
+                onDeleteItem={(id) => deleteListItem('clientSealingRequests', id)}
+                onEditItem={(listName, item) => openEditItemDialog('clientSealingRequests', listName, item)}
+                onToast={handleToast}
+              />
+              <ListManager
+                title={t.settings.cupLogoOptions}
+                icon={Circle}
+                list={cupLogoOptions}
+                listName={t.settings.cupLogoOptions}
+                onAddItem={(value) => addListItem('cupLogoOptions', value)}
+                onDeleteItem={(id) => deleteListItem('cupLogoOptions', id)}
+                onEditItem={(listName, item) => openEditItemDialog('cupLogoOptions', listName, item)}
+                onToast={handleToast}
+              />
+              <ListManager
+                title={t.settings.suspensions}
+                icon={SettingsIcon}
               list={suspensions}
               listName={t.settings.suspensions}
               onAddItem={(value) => addListItem('suspensions', value)}

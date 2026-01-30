@@ -29,6 +29,7 @@ const getInitialProduct = (): RequestProduct => ({
   articulationTypeOther: '',
   configurationType: '',
   configurationTypeOther: '',
+  quantity: null,
   loadsKg: null,
   speedsKmh: null,
   tyreSize: '',
@@ -40,6 +41,11 @@ const getInitialProduct = (): RequestProduct => ({
   finish: 'Black Primer default',
   brakeType: null,
   brakeSize: '',
+  brakePowerType: '',
+  brakeCertificate: '',
+  mainBodySectionType: '',
+  clientSealingRequest: '',
+  cupLogo: '',
   suspension: '',
   productComments: '',
   attachments: [],
@@ -49,6 +55,7 @@ const cloneProductForNext = (source: RequestProduct): RequestProduct => ({
   ...source,
   attachments: [],
   productComments: '',
+  quantity: null,
 });
 
 const buildLegacyProduct = (request: Partial<CustomerRequest>): RequestProduct => ({
@@ -58,6 +65,7 @@ const buildLegacyProduct = (request: Partial<CustomerRequest>): RequestProduct =
   articulationTypeOther: request.articulationTypeOther ?? '',
   configurationType: request.configurationType ?? '',
   configurationTypeOther: request.configurationTypeOther ?? '',
+  quantity: typeof request.expectedQty === 'number' ? request.expectedQty : null,
   loadsKg: request.loadsKg ?? null,
   speedsKmh: request.speedsKmh ?? null,
   tyreSize: request.tyreSize ?? '',
@@ -69,6 +77,11 @@ const buildLegacyProduct = (request: Partial<CustomerRequest>): RequestProduct =
   finish: request.finish ?? 'Black Primer default',
   brakeType: request.brakeType ?? null,
   brakeSize: request.brakeSize ?? '',
+  brakePowerType: request.brakePowerType ?? '',
+  brakeCertificate: request.brakeCertificate ?? '',
+  mainBodySectionType: request.mainBodySectionType ?? '',
+  clientSealingRequest: request.clientSealingRequest ?? '',
+  cupLogo: request.cupLogo ?? '',
   suspension: request.suspension ?? '',
   productComments: typeof (request as any).productComments === 'string'
     ? (request as any).productComments
@@ -83,6 +96,7 @@ const normalizeProducts = (request?: Partial<CustomerRequest>): RequestProduct[]
     return products.map((product) => ({
       ...getInitialProduct(),
       ...product,
+      quantity: typeof product.quantity === 'number' ? product.quantity : (typeof request.expectedQty === 'number' ? request.expectedQty : null),
       studsPcdMode: product.studsPcdMode ?? 'standard',
       studsPcdStandardSelections: Array.isArray(product.studsPcdStandardSelections) ? product.studsPcdStandardSelections : [],
       studsPcdSpecialText: product.studsPcdSpecialText ?? '',
@@ -101,7 +115,7 @@ const getInitialFormData = (): Partial<CustomerRequest> => ({
   applicationVehicle: '',
   applicationVehicleOther: '',
   country: '',
-  expectedQty: null,
+  city: '',
   repeatability: '',
   expectedDeliverySelections: [],
   workingCondition: '',
@@ -129,6 +143,11 @@ const RequestForm: React.FC = () => {
     configurationTypes,
     brakeTypes,
     brakeSizes,
+    brakePowerTypes,
+    brakeCertificates,
+    mainBodySectionTypes,
+    clientSealingRequests,
+    cupLogoOptions,
     suspensions,
     repeatabilityTypes,
     expectedDeliveryOptions,
@@ -397,8 +416,8 @@ const RequestForm: React.FC = () => {
     if (!formData.country?.trim()) {
       newErrors.country = t.request.country + ' ' + t.common.required.toLowerCase();
     }
-    if (!formData.expectedQty) {
-      newErrors.expectedQty = t.request.expectedQty + ' ' + t.common.required.toLowerCase();
+    if (formData.country === 'China' && !formData.city?.trim()) {
+      newErrors.city = t.request.city + ' ' + t.common.required.toLowerCase();
     }
     if (!formData.repeatability) {
       newErrors.repeatability = t.request.repeatability + ' ' + t.common.required.toLowerCase();
@@ -452,6 +471,9 @@ const RequestForm: React.FC = () => {
     if (!product.loadsKg) {
       newErrors[`${prefix}loadsKg`] = t.request.loads + ' ' + t.common.required.toLowerCase();
     }
+    if (product.quantity === null || product.quantity === undefined || product.quantity === 0) {
+      newErrors[`${prefix}quantity`] = t.request.quantity + ' ' + t.common.required.toLowerCase();
+    }
     if (!product.speedsKmh) {
       newErrors[`${prefix}speedsKmh`] = t.request.speeds + ' ' + t.common.required.toLowerCase();
     }
@@ -464,7 +486,9 @@ const RequestForm: React.FC = () => {
     if (!product.brakeType) {
       newErrors[`${prefix}brakeType`] = t.request.brakeType + ' ' + t.common.required.toLowerCase();
     }
-    if (!product.brakeSize) {
+    const brakeTypeValue = String(product.brakeType ?? '').toLowerCase();
+    const isBrakeNA = brakeTypeValue === 'na' || brakeTypeValue === 'n/a' || brakeTypeValue === 'n.a';
+    if (!isBrakeNA && !product.brakeSize) {
       newErrors[`${prefix}brakeSize`] = t.request.brakeSize + ' ' + t.common.required.toLowerCase();
     }
     if (!product.suspension?.trim()) {
@@ -538,6 +562,7 @@ const RequestForm: React.FC = () => {
       articulationTypeOther: primary.articulationTypeOther,
       configurationType: primary.configurationType,
       configurationTypeOther: primary.configurationTypeOther,
+      expectedQty: typeof primary.quantity === 'number' ? primary.quantity : null,
       loadsKg: primary.loadsKg,
       speedsKmh: primary.speedsKmh,
       tyreSize: primary.tyreSize,
@@ -549,6 +574,11 @@ const RequestForm: React.FC = () => {
       finish: primary.finish,
       brakeType: primary.brakeType,
       brakeSize: primary.brakeSize,
+      brakePowerType: primary.brakePowerType,
+      brakeCertificate: primary.brakeCertificate,
+      mainBodySectionType: primary.mainBodySectionType,
+      clientSealingRequest: primary.clientSealingRequest,
+      cupLogo: primary.cupLogo,
       suspension: primary.suspension,
       otherRequirements: primary.productComments,
       attachments: primary.attachments,
@@ -1044,6 +1074,11 @@ const RequestForm: React.FC = () => {
                       articulationTypeOptions={articulationTypes.map((a) => a.value)}
                       brakeTypeOptions={brakeTypes.map((b) => b.value)}
                       brakeSizeOptions={brakeSizes.map((b) => b.value)}
+                      brakePowerTypeOptions={brakePowerTypes.map((b) => b.value)}
+                      brakeCertificateOptions={brakeCertificates.map((b) => b.value)}
+                      mainBodySectionTypeOptions={mainBodySectionTypes.map((b) => b.value)}
+                      clientSealingRequestOptions={clientSealingRequests.map((b) => b.value)}
+                      cupLogoOptions={cupLogoOptions.map((b) => b.value)}
                       suspensionOptions={suspensions.map((s) => s.value)}
                       title={`${t.request.technicalInfo} - ${productLabel}`}
                       badgeLabel={`P${currentProductIndex + 1}`}
@@ -1159,6 +1194,11 @@ const RequestForm: React.FC = () => {
                       articulationTypeOptions={articulationTypes.map((a) => a.value)}
                       brakeTypeOptions={brakeTypes.map((b) => b.value)}
                       brakeSizeOptions={brakeSizes.map((b) => b.value)}
+                      brakePowerTypeOptions={brakePowerTypes.map((b) => b.value)}
+                      brakeCertificateOptions={brakeCertificates.map((b) => b.value)}
+                      mainBodySectionTypeOptions={mainBodySectionTypes.map((b) => b.value)}
+                      clientSealingRequestOptions={clientSealingRequests.map((b) => b.value)}
+                      cupLogoOptions={cupLogoOptions.map((b) => b.value)}
                       suspensionOptions={suspensions.map((s) => s.value)}
                       title={`${t.request.technicalInfo} - ${productLabel}`}
                       badgeLabel={`P${index + 1}`}

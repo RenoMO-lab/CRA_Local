@@ -132,6 +132,7 @@ const buildLegacyProduct = (request: CustomerRequest): RequestProduct => ({
   articulationTypeOther: request.articulationTypeOther ?? '',
   configurationType: request.configurationType ?? '',
   configurationTypeOther: request.configurationTypeOther ?? '',
+  quantity: typeof request.expectedQty === 'number' ? request.expectedQty : null,
   loadsKg: request.loadsKg ?? null,
   speedsKmh: request.speedsKmh ?? null,
   tyreSize: request.tyreSize ?? '',
@@ -143,6 +144,11 @@ const buildLegacyProduct = (request: CustomerRequest): RequestProduct => ({
   finish: request.finish ?? 'Black Primer default',
   brakeType: request.brakeType ?? null,
   brakeSize: request.brakeSize ?? '',
+  brakePowerType: request.brakePowerType ?? '',
+  brakeCertificate: request.brakeCertificate ?? '',
+  mainBodySectionType: request.mainBodySectionType ?? '',
+  clientSealingRequest: request.clientSealingRequest ?? '',
+  cupLogo: request.cupLogo ?? '',
   suspension: request.suspension ?? '',
   productComments: request.otherRequirements ?? '',
   attachments: Array.isArray(request.attachments) ? request.attachments : [],
@@ -378,7 +384,9 @@ export const generateRequestPDF = async (request: CustomerRequest): Promise<void
   drawSectionTitle(t.request.generalInfo);
   drawFieldLine(t.request.applicationVehicle, translateResolvedOption(request.applicationVehicle, request.applicationVehicleOther));
   drawFieldLine(t.request.country, translateResolvedOption(request.country, request.countryOther));
-  drawFieldLine(t.request.expectedQty, request.expectedQty);
+  if (request.country === 'China' && request.city) {
+    drawFieldLine(t.request.city, request.city);
+  }
   drawFieldLine(t.request.repeatability, translateOption(request.repeatability));
   y += 6;
 
@@ -425,6 +433,7 @@ export const generateRequestPDF = async (request: CustomerRequest): Promise<void
       [
         { label: t.request.productType, value: getProductTypeLabel(product, translateOption) },
         { label: t.pdf.loadsKgLabel, value: product.loadsKg },
+        { label: t.request.quantity, value: product.quantity },
         { label: t.pdf.speedsKmhLabel, value: product.speedsKmh },
       ],
       2
@@ -432,35 +441,44 @@ export const generateRequestPDF = async (request: CustomerRequest): Promise<void
     y += 4;
 
     drawSubsectionTitle(t.pdf.wheelsGeometryTitle);
+    const articulationValue = String(product.articulationType ?? '').toLowerCase();
+    const showWheelBase = articulationValue.includes('steering');
     drawFieldGrid(
       [
         { label: t.request.tyreSize, value: product.tyreSize },
         { label: t.pdf.trackMmLabel, value: product.trackMm },
-        { label: t.request.wheelBase, value: product.wheelBase },
-      ],
+        showWheelBase ? { label: t.request.wheelBase, value: product.wheelBase } : null,
+      ].filter(Boolean) as { label: string; value: string | number | null | undefined }[],
       2
     );
     y += 4;
 
     drawSubsectionTitle(t.pdf.brakingSuspensionTitle);
+    const brakeTypeRaw = String(product.brakeType ?? '').toLowerCase();
+    const isBrakeNA = brakeTypeRaw === 'na' || brakeTypeRaw === 'n/a' || brakeTypeRaw === 'n.a';
     drawFieldGrid(
       [
-        { label: t.request.brakeType, value: translateBrakeType(product.brakeType) },
-        { label: t.request.brakeSize, value: translateOption(product.brakeSize) },
-        { label: t.request.suspension, value: translateOption(product.suspension) },
-      ],
-      2
-    );
+          { label: t.request.brakeType, value: translateBrakeType(product.brakeType) },
+          !isBrakeNA ? { label: t.request.brakeSize, value: translateOption(product.brakeSize) } : null,
+          { label: t.request.brakePowerType, value: translateOption(product.brakePowerType) },
+          { label: t.request.brakeCertificate, value: translateOption(product.brakeCertificate) },
+          { label: t.request.suspension, value: translateOption(product.suspension) },
+        ].filter(Boolean) as { label: string; value: string | number | null | undefined }[],
+        2
+      );
     y += 4;
 
     drawSubsectionTitle(t.pdf.finishInterfaceTitle);
     drawFieldGrid(
       [
-        { label: t.request.finish, value: product.finish },
-        { label: t.request.studsPcd, value: studsValue },
-      ],
-      2
-    );
+          { label: t.request.finish, value: product.finish },
+          { label: t.request.studsPcd, value: studsValue },
+          { label: t.request.mainBodySectionType, value: translateOption(product.mainBodySectionType) },
+          { label: t.request.clientSealingRequest, value: translateOption(product.clientSealingRequest) },
+          { label: t.request.cupLogo, value: translateOption(product.cupLogo) },
+        ],
+        2
+      );
     y += 5;
 
     if (product.productComments) {

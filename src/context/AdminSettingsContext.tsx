@@ -19,6 +19,11 @@ interface AdminSettingsContextType {
   countries: ListItem[];
   brakeTypes: ListItem[];
   brakeSizes: ListItem[];
+  brakePowerTypes: ListItem[];
+  brakeCertificates: ListItem[];
+  mainBodySectionTypes: ListItem[];
+  clientSealingRequests: ListItem[];
+  cupLogoOptions: ListItem[];
   suspensions: ListItem[];
   repeatabilityTypes: ListItem[];
   expectedDeliveryOptions: ListItem[];
@@ -72,6 +77,28 @@ const DEFAULT_DATA = {
     { id: '4', value: '400x80' },
     { id: '5', value: 'N/A' },
   ],
+  brakePowerTypes: [
+    { id: '1', value: 'Air' },
+    { id: '2', value: 'Hydraulic' },
+  ],
+  brakeCertificates: [
+    { id: '1', value: 'Required' },
+    { id: '2', value: 'Not required' },
+  ],
+  mainBodySectionTypes: [
+    { id: '1', value: 'Round' },
+    { id: '2', value: 'Square' },
+    { id: '3', value: 'Tube' },
+  ],
+  clientSealingRequests: [
+    { id: '1', value: 'Steel' },
+    { id: '2', value: 'Rubber' },
+    { id: '3', value: 'N/A' },
+  ],
+  cupLogoOptions: [
+    { id: '1', value: 'Keep' },
+    { id: '2', value: 'Remove' },
+  ],
   suspensions: [
     { id: '1', value: 'Air suspension' },
     { id: '2', value: 'Leaf spring' },
@@ -99,9 +126,8 @@ const DEFAULT_DATA = {
     { id: '3', value: 'Under Water' },
   ],
   usageTypes: [
-    { id: '1', value: '100% Off-Road' },
-    { id: '2', value: 'On-Road' },
-    { id: '3', value: 'Hybrid' },
+    { id: '1', value: 'Farm field' },
+    { id: '2', value: 'Tarmac' },
   ],
   environments: [
     { id: '1', value: 'Clean' },
@@ -143,6 +169,11 @@ export type ListCategory =
   | 'countries'
   | 'brakeTypes'
   | 'brakeSizes'
+  | 'brakePowerTypes'
+  | 'brakeCertificates'
+  | 'mainBodySectionTypes'
+  | 'clientSealingRequests'
+  | 'cupLogoOptions'
   | 'suspensions'
   | 'repeatabilityTypes'
   | 'expectedDeliveryOptions'
@@ -194,11 +225,30 @@ const loadUsersFromStorage = (): UserItem[] => {
   return DEFAULT_DATA.users;
 };
 
+const mergeDefaultList = (list: ListItem[] | undefined, defaults: ListItem[]) => {
+  const safeList = Array.isArray(list) ? list : [];
+  if (!safeList.length) return defaults;
+  const seen = new Set(safeList.map((item) => item.value.trim().toLowerCase()));
+  const merged = [...safeList];
+  defaults.forEach((item) => {
+    const key = item.value.trim().toLowerCase();
+    if (!seen.has(key)) {
+      merged.push(item);
+    }
+  });
+  return merged;
+};
+
 export const AdminSettingsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [applicationVehicles, setApplicationVehicles] = useState<ListItem[]>(DEFAULT_DATA.applicationVehicles);
   const [countries, setCountries] = useState<ListItem[]>(DEFAULT_DATA.countries);
   const [brakeTypes, setBrakeTypes] = useState<ListItem[]>(DEFAULT_DATA.brakeTypes);
   const [brakeSizes, setBrakeSizes] = useState<ListItem[]>(DEFAULT_DATA.brakeSizes);
+  const [brakePowerTypes, setBrakePowerTypes] = useState<ListItem[]>(DEFAULT_DATA.brakePowerTypes);
+  const [brakeCertificates, setBrakeCertificates] = useState<ListItem[]>(DEFAULT_DATA.brakeCertificates);
+  const [mainBodySectionTypes, setMainBodySectionTypes] = useState<ListItem[]>(DEFAULT_DATA.mainBodySectionTypes);
+  const [clientSealingRequests, setClientSealingRequests] = useState<ListItem[]>(DEFAULT_DATA.clientSealingRequests);
+  const [cupLogoOptions, setCupLogoOptions] = useState<ListItem[]>(DEFAULT_DATA.cupLogoOptions);
   const [suspensions, setSuspensions] = useState<ListItem[]>(DEFAULT_DATA.suspensions);
   const [repeatabilityTypes, setRepeatabilityTypes] = useState<ListItem[]>(DEFAULT_DATA.repeatabilityTypes);
   const [expectedDeliveryOptions, setExpectedDeliveryOptions] = useState<ListItem[]>(DEFAULT_DATA.expectedDeliveryOptions);
@@ -228,6 +278,16 @@ export const AdminSettingsProvider: React.FC<{ children: React.ReactNode }> = ({
         return [brakeTypes, setBrakeTypes];
       case 'brakeSizes':
         return [brakeSizes, setBrakeSizes];
+      case 'brakePowerTypes':
+        return [brakePowerTypes, setBrakePowerTypes];
+      case 'brakeCertificates':
+        return [brakeCertificates, setBrakeCertificates];
+      case 'mainBodySectionTypes':
+        return [mainBodySectionTypes, setMainBodySectionTypes];
+      case 'clientSealingRequests':
+        return [clientSealingRequests, setClientSealingRequests];
+      case 'cupLogoOptions':
+        return [cupLogoOptions, setCupLogoOptions];
       case 'suspensions':
         return [suspensions, setSuspensions];
       case 'repeatabilityTypes':
@@ -260,11 +320,16 @@ export const AdminSettingsProvider: React.FC<{ children: React.ReactNode }> = ({
         setCountries(lists.countries ?? DEFAULT_DATA.countries);
         setBrakeTypes(lists.brakeTypes ?? DEFAULT_DATA.brakeTypes);
         setBrakeSizes(lists.brakeSizes ?? DEFAULT_DATA.brakeSizes);
+        setBrakePowerTypes(mergeDefaultList(lists.brakePowerTypes, DEFAULT_DATA.brakePowerTypes));
+        setBrakeCertificates(mergeDefaultList(lists.brakeCertificates, DEFAULT_DATA.brakeCertificates));
+        setMainBodySectionTypes(mergeDefaultList(lists.mainBodySectionTypes, DEFAULT_DATA.mainBodySectionTypes));
+        setClientSealingRequests(mergeDefaultList(lists.clientSealingRequests, DEFAULT_DATA.clientSealingRequests));
+        setCupLogoOptions(mergeDefaultList(lists.cupLogoOptions, DEFAULT_DATA.cupLogoOptions));
         setSuspensions(lists.suspensions ?? DEFAULT_DATA.suspensions);
         setRepeatabilityTypes(lists.repeatabilityTypes ?? DEFAULT_DATA.repeatabilityTypes);
         setExpectedDeliveryOptions(lists.expectedDeliveryOptions ?? DEFAULT_DATA.expectedDeliveryOptions);
         setWorkingConditions(lists.workingConditions ?? DEFAULT_DATA.workingConditions);
-        setUsageTypes(lists.usageTypes ?? DEFAULT_DATA.usageTypes);
+        setUsageTypes(mergeDefaultList(lists.usageTypes, DEFAULT_DATA.usageTypes));
         setEnvironments(lists.environments ?? DEFAULT_DATA.environments);
         setAxleLocations(lists.axleLocations ?? DEFAULT_DATA.axleLocations);
         setArticulationTypes(lists.articulationTypes ?? DEFAULT_DATA.articulationTypes);
@@ -317,6 +382,11 @@ export const AdminSettingsProvider: React.FC<{ children: React.ReactNode }> = ({
       countries,
       brakeTypes,
       brakeSizes,
+      brakePowerTypes,
+      brakeCertificates,
+      mainBodySectionTypes,
+      clientSealingRequests,
+      cupLogoOptions,
       suspensions,
       repeatabilityTypes,
       expectedDeliveryOptions,

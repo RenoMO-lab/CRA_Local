@@ -22,6 +22,11 @@ interface SectionTechnicalInfoProps {
   articulationTypeOptions?: string[];
   brakeTypeOptions?: string[];
   brakeSizeOptions?: string[];
+  brakePowerTypeOptions?: string[];
+  brakeCertificateOptions?: string[];
+  mainBodySectionTypeOptions?: string[];
+  clientSealingRequestOptions?: string[];
+  cupLogoOptions?: string[];
   suspensionOptions?: string[];
   title?: string;
   badgeLabel?: string;
@@ -38,6 +43,11 @@ const SectionTechnicalInfo: React.FC<SectionTechnicalInfoProps> = ({
   articulationTypeOptions = [],
   brakeTypeOptions = [],
   brakeSizeOptions = [],
+  brakePowerTypeOptions = [],
+  brakeCertificateOptions = [],
+  mainBodySectionTypeOptions = [],
+  clientSealingRequestOptions = [],
+  cupLogoOptions = [],
   suspensionOptions = [],
   title,
   badgeLabel,
@@ -48,12 +58,21 @@ const SectionTechnicalInfo: React.FC<SectionTechnicalInfoProps> = ({
   const showConfigurationTypeOther = formData.configurationType === 'other';
   const showAxleLocationOther = formData.axleLocation === 'other';
   const showArticulationTypeOther = formData.articulationType === 'other';
+  const articulationValue = (formData.articulationType ?? '').toString().toLowerCase();
+  const showWheelBase = articulationValue.includes('steering');
+  const brakeTypeValue = String(formData.brakeType ?? '').toLowerCase();
+  const isBrakeNA = brakeTypeValue === 'na' || brakeTypeValue === 'n/a' || brakeTypeValue === 'n.a';
 
   const hasConfigurationOptions = configurationTypeOptions.length > 0;
   const hasAxleLocationOptions = axleLocationOptions.length > 0;
   const hasArticulationOptions = articulationTypeOptions.length > 0;
   const hasBrakeTypeOptions = brakeTypeOptions.length > 0;
   const hasBrakeSizeOptions = brakeSizeOptions.length > 0;
+  const hasBrakePowerTypeOptions = brakePowerTypeOptions.length > 0;
+  const hasBrakeCertificateOptions = brakeCertificateOptions.length > 0;
+  const hasMainBodySectionTypeOptions = mainBodySectionTypeOptions.length > 0;
+  const hasClientSealingRequestOptions = clientSealingRequestOptions.length > 0;
+  const hasCupLogoOptions = cupLogoOptions.length > 0;
   const hasSuspensionOptions = suspensionOptions.length > 0;
 
   const normalizeBrakeType = (raw: string): BrakeType => {
@@ -343,6 +362,26 @@ const SectionTechnicalInfo: React.FC<SectionTechnicalInfoProps> = ({
             <p className="text-xs text-destructive">{errors.trackMm}</p>
           )}
         </div>
+
+        {/* Quantity */}
+        <div className="space-y-2">
+          <Label htmlFor={fieldId('quantity')} className="text-sm font-medium">
+            {t.request.quantity} <span className="text-destructive">*</span>
+          </Label>
+          <Input
+            id={fieldId('quantity')}
+            type="number"
+            min="0"
+            value={formData.quantity ?? ''}
+            onChange={(e) => onChange('quantity', e.target.value ? parseInt(e.target.value) : null)}
+            placeholder={t.request.quantityExample}
+            disabled={isReadOnly}
+            className={errors.quantity ? 'border-destructive' : ''}
+          />
+          {errors.quantity && (
+            <p className="text-xs text-destructive">{errors.quantity}</p>
+          )}
+        </div>
       </div>
 
       {/* Studs/PCD Block */}
@@ -356,19 +395,21 @@ const SectionTechnicalInfo: React.FC<SectionTechnicalInfoProps> = ({
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
         {/* Wheel Base */}
-        <div className="space-y-2">
-          <Label htmlFor={fieldId('wheelBase')} className="text-sm font-medium">
-            {t.request.wheelBase} (mm)
-          </Label>
-          <Input
-            id={fieldId('wheelBase')}
-            value={formData.wheelBase || ''}
-            onChange={(e) => onChange('wheelBase', e.target.value)}
-            placeholder={t.request.steeringAxleParam}
-            disabled={isReadOnly}
-          />
-          <p className="text-xs text-muted-foreground">{t.request.steeringAxleParam}</p>
-        </div>
+        {showWheelBase && (
+          <div className="space-y-2">
+            <Label htmlFor={fieldId('wheelBase')} className="text-sm font-medium">
+              {t.request.wheelBase} (mm)
+            </Label>
+            <Input
+              id={fieldId('wheelBase')}
+              value={formData.wheelBase || ''}
+              onChange={(e) => onChange('wheelBase', e.target.value)}
+              placeholder={t.request.steeringAxleParam}
+              disabled={isReadOnly}
+            />
+            <p className="text-xs text-muted-foreground">{t.request.steeringAxleParam}</p>
+          </div>
+        )}
 
         {/* Finish */}
         <div className="space-y-2">
@@ -392,7 +433,12 @@ const SectionTechnicalInfo: React.FC<SectionTechnicalInfoProps> = ({
           {hasBrakeTypeOptions ? (
             <Select
               value={(formData.brakeType as any) || ''}
-              onValueChange={(value) => onChange('brakeType', value as BrakeType)}
+              onValueChange={(value) => {
+                onChange('brakeType', value as BrakeType);
+                if (String(value).toLowerCase() === 'na') {
+                  onChange('brakeSize', '');
+                }
+              }}
               disabled={isReadOnly}
             >
               <SelectTrigger className={errors.brakeType ? 'border-destructive' : ''}>
@@ -412,7 +458,12 @@ const SectionTechnicalInfo: React.FC<SectionTechnicalInfoProps> = ({
           ) : (
             <Select
               value={formData.brakeType || ''}
-              onValueChange={(value) => onChange('brakeType', value as BrakeType)}
+              onValueChange={(value) => {
+                onChange('brakeType', value as BrakeType);
+                if (String(value).toLowerCase() === 'na') {
+                  onChange('brakeSize', '');
+                }
+              }}
               disabled={isReadOnly}
             >
               <SelectTrigger className={errors.brakeType ? 'border-destructive' : ''}>
@@ -421,6 +472,7 @@ const SectionTechnicalInfo: React.FC<SectionTechnicalInfoProps> = ({
               <SelectContent className="z-50 bg-card border border-border">
                 <SelectItem value="drum">{t.request.drum}</SelectItem>
                 <SelectItem value="disk">{t.request.disk}</SelectItem>
+                <SelectItem value="na">{t.request.na}</SelectItem>
               </SelectContent>
             </Select>
           )}
@@ -430,39 +482,206 @@ const SectionTechnicalInfo: React.FC<SectionTechnicalInfoProps> = ({
         </div>
 
         {/* Brake Size */}
+        {!isBrakeNA && (
+          <div className="space-y-2">
+            <Label htmlFor={fieldId('brakeSize')} className="text-sm font-medium">
+              {t.request.brakeSize} <span className="text-destructive">*</span>
+            </Label>
+            {hasBrakeSizeOptions ? (
+              <Select
+                value={formData.brakeSize || ''}
+                onValueChange={(value) => onChange('brakeSize', value)}
+                disabled={isReadOnly}
+              >
+                <SelectTrigger className={errors.brakeSize ? 'border-destructive' : ''}>
+                  <SelectValue placeholder={t.request.selectBrakeSize} />
+                </SelectTrigger>
+                  <SelectContent className="z-50 bg-card border border-border">
+                  {brakeSizeOptions.map((size) => (
+                    <SelectItem key={size} value={size}>
+                      {translateOption(size)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            ) : (
+              <Input
+                id={fieldId('brakeSize')}
+                value={formData.brakeSize || ''}
+                onChange={(e) => onChange('brakeSize', e.target.value)}
+                placeholder={t.request.selectBrakeSize}
+                disabled={isReadOnly}
+                className={errors.brakeSize ? 'border-destructive' : ''}
+              />
+            )}
+            {errors.brakeSize && (
+              <p className="text-xs text-destructive">{errors.brakeSize}</p>
+            )}
+          </div>
+        )}
+
+        {/* Brake Power Type */}
         <div className="space-y-2">
-          <Label htmlFor={fieldId('brakeSize')} className="text-sm font-medium">
-            {t.request.brakeSize} <span className="text-destructive">*</span>
+          <Label htmlFor={fieldId('brakePowerType')} className="text-sm font-medium">
+            {t.request.brakePowerType}
           </Label>
-          {hasBrakeSizeOptions ? (
+          {hasBrakePowerTypeOptions ? (
             <Select
-              value={formData.brakeSize || ''}
-              onValueChange={(value) => onChange('brakeSize', value)}
+              value={formData.brakePowerType || ''}
+              onValueChange={(value) => onChange('brakePowerType', value)}
               disabled={isReadOnly}
             >
-              <SelectTrigger className={errors.brakeSize ? 'border-destructive' : ''}>
-                <SelectValue placeholder={t.request.selectBrakeSize} />
+              <SelectTrigger>
+                <SelectValue placeholder={t.request.selectBrakePowerType} />
               </SelectTrigger>
-                <SelectContent className="z-50 bg-card border border-border">
-                {brakeSizeOptions.map((size) => (
-                  <SelectItem key={size} value={size}>
-                    {translateOption(size)}
+              <SelectContent className="bg-card border border-border">
+                {brakePowerTypeOptions.map((option) => (
+                  <SelectItem key={option} value={option}>
+                    {translateOption(option)}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           ) : (
             <Input
-              id={fieldId('brakeSize')}
-              value={formData.brakeSize || ''}
-              onChange={(e) => onChange('brakeSize', e.target.value)}
-              placeholder={t.request.selectBrakeSize}
+              id={fieldId('brakePowerType')}
+              value={formData.brakePowerType || ''}
+              onChange={(e) => onChange('brakePowerType', e.target.value)}
+              placeholder={t.request.selectBrakePowerType}
               disabled={isReadOnly}
-              className={errors.brakeSize ? 'border-destructive' : ''}
             />
           )}
-          {errors.brakeSize && (
-            <p className="text-xs text-destructive">{errors.brakeSize}</p>
+        </div>
+
+        {/* Brake Certificate */}
+        <div className="space-y-2">
+          <Label htmlFor={fieldId('brakeCertificate')} className="text-sm font-medium">
+            {t.request.brakeCertificate}
+          </Label>
+          {hasBrakeCertificateOptions ? (
+            <Select
+              value={formData.brakeCertificate || ''}
+              onValueChange={(value) => onChange('brakeCertificate', value)}
+              disabled={isReadOnly}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder={t.request.selectBrakeCertificate} />
+              </SelectTrigger>
+              <SelectContent className="bg-card border border-border">
+                {brakeCertificateOptions.map((option) => (
+                  <SelectItem key={option} value={option}>
+                    {translateOption(option)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          ) : (
+            <Input
+              id={fieldId('brakeCertificate')}
+              value={formData.brakeCertificate || ''}
+              onChange={(e) => onChange('brakeCertificate', e.target.value)}
+              placeholder={t.request.selectBrakeCertificate}
+              disabled={isReadOnly}
+            />
+          )}
+        </div>
+
+        {/* Main Body Section Type */}
+        <div className="space-y-2">
+          <Label htmlFor={fieldId('mainBodySectionType')} className="text-sm font-medium">
+            {t.request.mainBodySectionType}
+          </Label>
+          {hasMainBodySectionTypeOptions ? (
+            <Select
+              value={formData.mainBodySectionType || ''}
+              onValueChange={(value) => onChange('mainBodySectionType', value)}
+              disabled={isReadOnly}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder={t.request.selectMainBodySectionType} />
+              </SelectTrigger>
+              <SelectContent className="bg-card border border-border">
+                {mainBodySectionTypeOptions.map((option) => (
+                  <SelectItem key={option} value={option}>
+                    {translateOption(option)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          ) : (
+            <Input
+              id={fieldId('mainBodySectionType')}
+              value={formData.mainBodySectionType || ''}
+              onChange={(e) => onChange('mainBodySectionType', e.target.value)}
+              placeholder={t.request.selectMainBodySectionType}
+              disabled={isReadOnly}
+            />
+          )}
+        </div>
+
+        {/* Client Sealing Request */}
+        <div className="space-y-2">
+          <Label htmlFor={fieldId('clientSealingRequest')} className="text-sm font-medium">
+            {t.request.clientSealingRequest}
+          </Label>
+          {hasClientSealingRequestOptions ? (
+            <Select
+              value={formData.clientSealingRequest || ''}
+              onValueChange={(value) => onChange('clientSealingRequest', value)}
+              disabled={isReadOnly}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder={t.request.selectClientSealingRequest} />
+              </SelectTrigger>
+              <SelectContent className="bg-card border border-border">
+                {clientSealingRequestOptions.map((option) => (
+                  <SelectItem key={option} value={option}>
+                    {translateOption(option)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          ) : (
+            <Input
+              id={fieldId('clientSealingRequest')}
+              value={formData.clientSealingRequest || ''}
+              onChange={(e) => onChange('clientSealingRequest', e.target.value)}
+              placeholder={t.request.selectClientSealingRequest}
+              disabled={isReadOnly}
+            />
+          )}
+        </div>
+
+        {/* Cup Logo */}
+        <div className="space-y-2">
+          <Label htmlFor={fieldId('cupLogo')} className="text-sm font-medium">
+            {t.request.cupLogo}
+          </Label>
+          {hasCupLogoOptions ? (
+            <Select
+              value={formData.cupLogo || ''}
+              onValueChange={(value) => onChange('cupLogo', value)}
+              disabled={isReadOnly}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder={t.request.selectCupLogo} />
+              </SelectTrigger>
+              <SelectContent className="bg-card border border-border">
+                {cupLogoOptions.map((option) => (
+                  <SelectItem key={option} value={option}>
+                    {translateOption(option)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          ) : (
+            <Input
+              id={fieldId('cupLogo')}
+              value={formData.cupLogo || ''}
+              onChange={(e) => onChange('cupLogo', e.target.value)}
+              placeholder={t.request.selectCupLogo}
+              disabled={isReadOnly}
+            />
           )}
         </div>
 

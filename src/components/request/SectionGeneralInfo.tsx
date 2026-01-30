@@ -30,6 +30,7 @@ const SectionGeneralInfo: React.FC<SectionGeneralInfoProps> = ({
 }) => {
   const { t, translateOption } = useLanguage();
   const showCountryOther = formData.country === 'other';
+  const showCity = formData.country === 'China';
   const hasCountryOptions = countryOptions.length > 0;
   const hasRepeatabilityOptions = repeatabilityOptions.length > 0;
 
@@ -90,6 +91,9 @@ const SectionGeneralInfo: React.FC<SectionGeneralInfoProps> = ({
                 if (value !== 'other') {
                   onChange('countryOther', '');
                 }
+                if (value !== 'China') {
+                  onChange('city' as any, '');
+                }
               }}
               disabled={isReadOnly}
             >
@@ -119,6 +123,26 @@ const SectionGeneralInfo: React.FC<SectionGeneralInfoProps> = ({
             <p className="text-xs text-destructive">{errors.country}</p>
           )}
         </div>
+
+        {/* City */}
+        {showCity && (
+          <div className="space-y-2">
+            <Label htmlFor="city" className="text-sm font-medium">
+              {t.request.city} <span className="text-destructive">*</span>
+            </Label>
+            <Input
+              id="city"
+              value={(formData as any).city || ''}
+              onChange={(e) => onChange('city' as any, e.target.value)}
+              placeholder={t.request.enterCity}
+              disabled={isReadOnly}
+              className={(errors as any).city ? 'border-destructive' : ''}
+            />
+            {(errors as any).city && (
+              <p className="text-xs text-destructive">{(errors as any).city}</p>
+            )}
+          </div>
+        )}
 
         {/* Repeatability */}
         <div className="space-y-2">
@@ -154,25 +178,6 @@ const SectionGeneralInfo: React.FC<SectionGeneralInfoProps> = ({
           )}
           {errors.repeatability && (
             <p className="text-xs text-destructive">{errors.repeatability}</p>
-          )}
-        </div>
-
-        {/* Expected Qty */}
-        <div className="space-y-2">
-          <Label htmlFor="expectedQty" className="text-sm font-medium">
-            {t.request.expectedQty} <span className="text-destructive">*</span>
-          </Label>
-          <Input
-            id="expectedQty"
-            type="number"
-            value={formData.expectedQty || ''}
-            onChange={(e) => onChange('expectedQty', e.target.value ? parseInt(e.target.value) : null)}
-            placeholder={t.request.expectedQtyExample}
-            disabled={isReadOnly}
-            className={errors.expectedQty ? 'border-destructive' : ''}
-          />
-          {errors.expectedQty && (
-            <p className="text-xs text-destructive">{errors.expectedQty}</p>
           )}
         </div>
 

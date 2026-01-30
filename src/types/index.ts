@@ -46,6 +46,7 @@ export interface RequestProduct {
   configurationType: ConfigurationType | string;
   configurationTypeOther?: string;
 
+  quantity?: number | null;
   loadsKg: number | null;
   speedsKmh: number | null;
   tyreSize: string;
@@ -61,6 +62,11 @@ export interface RequestProduct {
   finish: string;
   brakeType: BrakeType | null;
   brakeSize: string;
+  brakePowerType?: string;
+  brakeCertificate?: string;
+  mainBodySectionType?: string;
+  clientSealingRequest?: string;
+  cupLogo?: string;
   suspension: string;
 
   // Product-specific comments
@@ -88,6 +94,7 @@ export interface CustomerRequest {
   applicationVehicleOther?: string;
   country: string;
   countryOther?: string;
+  city?: string;
   expectedQty: number | null;
   repeatability: string;
   expectedDeliverySelections: string[];
@@ -121,6 +128,11 @@ export interface CustomerRequest {
   finish?: string;
   brakeType?: BrakeType | null;
   brakeSize?: string;
+  brakePowerType?: string;
+  brakeCertificate?: string;
+  mainBodySectionType?: string;
+  clientSealingRequest?: string;
+  cupLogo?: string;
   suspension?: string;
   otherRequirements?: string;
   attachments?: Attachment[];
