@@ -565,9 +565,8 @@ export const translations = {
       '250x50': '250x50',
       '300x60': '300x60',
       '400x80': '400x80',
-      // Brake Power Types
-      'Air': 'Air',
-      'Hydraulic': 'Hydraulic',
+        // Brake Power Types
+        'Air': 'Air',
       // Brake Certificates
       'Required': 'Required',
       'Not required': 'Not required',
@@ -1243,9 +1242,8 @@ export const translations = {
       '250x50': '250x50',
       '300x60': '300x60',
       '400x80': '400x80',
-      // Brake Power Types
-      'Air': 'Air',
-      'Hydraulic': 'Hydraulique',
+        // Brake Power Types
+        'Air': 'Air',
       // Brake Certificates
       'Required': 'Requis',
       'Not required': 'Non requis',
@@ -1921,9 +1919,8 @@ export const translations = {
       '250x50': '250x50',
       '300x60': '300x60',
       '400x80': '400x80',
-      // Brake Power Types
-      'Air': '气动',
-      'Hydraulic': '液压',
+        // Brake Power Types
+        'Air': '气动',
       // Brake Certificates
       'Required': '需要',
       'Not required': '不需要',
