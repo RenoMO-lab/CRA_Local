@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { format } from 'date-fns';
 import { useAuth } from '@/context/AuthContext';
 import { useRequests } from '@/context/RequestContext';
 import { useAdminSettings } from '@/context/AdminSettingsContext';
@@ -18,7 +19,7 @@ import StatusTimeline from '@/components/request/StatusTimeline';
 import DesignResultSection from '@/components/request/DesignResultSection';
 import SalesFollowupPanel from '@/components/request/SalesFollowupPanel';
 import StatusBadge from '@/components/ui/StatusBadge';
-import { ArrowLeft, ArrowRight, CheckCircle, ClipboardCheck, Clock, Loader2, Save } from 'lucide-react';
+import { ArrowLeft, ArrowRight, CheckCircle, ClipboardCheck, Clock, Download, Eye, File, Loader2, Save } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 type FormStep = 'chapters' | 'product' | 'review';
@@ -842,10 +843,116 @@ const RequestForm: React.FC = () => {
     existingRequest &&
       ['design_result', 'in_costing', 'costing_complete', 'sales_followup', 'gm_approval_pending', 'gm_approved', 'closed'].includes(existingRequest.status)
   );
+  const showDesignSummary = Boolean(existingRequest && isDesignSubmitted);
 
   useEffect(() => {
     setIsDesignPanelCollapsed(shouldCollapseDesignPanel);
   }, [shouldCollapseDesignPanel, existingRequest?.id]);
+
+  const renderDesignSummary = () => {
+    if (!existingRequest) return null;
+    const statusLabel = t.statuses[existingRequest.status as keyof typeof t.statuses] || existingRequest.status;
+    const designAttachments = Array.isArray(existingRequest.designResultAttachments)
+      ? existingRequest.designResultAttachments
+      : [];
+    const hasReviewNotes = Boolean(
+      existingRequest.clarificationComment ||
+        existingRequest.acceptanceMessage ||
+        existingRequest.expectedDesignReplyDate
+    );
+
+    return (
+      <div className="bg-card rounded-lg border border-border p-6 space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+          <div className="w-10 h-10 rounded-lg bg-warning/10 text-warning flex items-center justify-center">
+            <ClipboardCheck size={20} />
+          </div>
+          <div>
+            <h3 className="font-semibold text-foreground">{t.panels.designAction}</h3>
+            <p className="text-sm text-muted-foreground">{t.panels.designActionDesc}</p>
+          </div>
+        </div>
+
+        <div className="p-4 bg-warning/10 rounded-lg border border-warning/20 space-y-2">
+          <p className="text-sm font-medium text-warning">{t.panels.designSubmitted}</p>
+          <p className="text-sm text-foreground">
+            <span className="text-muted-foreground">{t.common.status}:</span> {statusLabel}
+          </p>
+          {existingRequest.designResultComments && (
+            <p className="text-sm text-foreground">
+              <span className="text-muted-foreground">{t.panels.designResultComments}:</span>{' '}
+              {existingRequest.designResultComments}
+            </p>
+          )}
+        </div>
+
+        {hasReviewNotes && (
+          <div className="rounded-lg border border-border bg-muted/30 p-4 space-y-3">
+            <p className="text-sm font-semibold text-foreground">{t.panels.previousComments}</p>
+            {existingRequest.clarificationComment && (
+              <div className="text-sm text-foreground">
+                <span className="text-xs uppercase tracking-wide text-muted-foreground">
+                  {t.panels.lastClarification}
+                </span>
+                <p className="mt-1 whitespace-pre-line">{existingRequest.clarificationComment}</p>
+              </div>
+            )}
+            {existingRequest.acceptanceMessage && (
+              <div className="text-sm text-foreground">
+                <span className="text-xs uppercase tracking-wide text-muted-foreground">
+                  {t.panels.lastAcceptance}
+                </span>
+                <p className="mt-1 whitespace-pre-line">{existingRequest.acceptanceMessage}</p>
+              </div>
+            )}
+            {existingRequest.expectedDesignReplyDate && (
+              <div className="text-sm text-foreground">
+                <span className="text-xs uppercase tracking-wide text-muted-foreground">
+                  {t.panels.expectedReplyDateLabel}
+                </span>
+                <p className="mt-1">{format(new Date(existingRequest.expectedDesignReplyDate), 'PPP')}</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {designAttachments.length > 0 && (
+          <div className="space-y-2">
+            <p className="text-sm font-medium text-foreground">{t.panels.designResultUploads}</p>
+            {designAttachments.map((attachment) => (
+              <div
+                key={attachment.id}
+                className="flex items-center justify-between gap-2 rounded-lg border border-border bg-muted/40 px-3 py-2"
+              >
+                <div className="flex min-w-0 flex-1 items-center gap-2">
+                  <File size={16} className="text-primary" />
+                  <span className="text-sm truncate">{attachment.filename}</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => window.open(attachment.url, '_blank')}
+                    className="rounded p-1.5 text-primary hover:bg-primary/20"
+                    title={t.table.view}
+                  >
+                    <Eye size={14} />
+                  </button>
+                  <a
+                    href={attachment.url}
+                    download={attachment.filename}
+                    className="rounded p-1.5 text-primary hover:bg-primary/20"
+                    title={t.request.downloadFile}
+                  >
+                    <Download size={14} />
+                  </a>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  };
 
   const handleDesignResultSave = async (payload: { comments: string; attachments: Attachment[] }) => {
     if (!existingRequest) return;
@@ -857,6 +964,7 @@ const RequestForm: React.FC = () => {
       });
       await updateStatus(existingRequest.id, 'design_result');
       setDesignResultDirty(false);
+      setIsDesignPanelCollapsed(true);
       toast({
         title: t.request.statusUpdated,
         description: t.request.draftSavedDesc,
@@ -1300,7 +1408,9 @@ const RequestForm: React.FC = () => {
             />
           )}
 
-          {existingRequest && (isDesignRole || isAdminEdit) && (
+          {existingRequest && showDesignSummary && renderDesignSummary()}
+
+          {existingRequest && !showDesignSummary && (isDesignRole || isAdminEdit) && (
             <div className="bg-card rounded-lg border border-border p-6 space-y-6">
               <div className="flex flex-col sm:flex-row sm:items-center gap-3">
                 <div className="w-10 h-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
@@ -1378,7 +1488,7 @@ const RequestForm: React.FC = () => {
             </div>
           )}
 
-          {existingRequest && !(isDesignRole || isAdminEdit) && (
+          {existingRequest && !showDesignSummary && !(isDesignRole || isAdminEdit) && (
             <div className="bg-card rounded-lg border border-border p-6 space-y-6">
               <div className="flex flex-col sm:flex-row sm:items-center gap-3">
                 <div className="w-10 h-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
@@ -1536,7 +1646,7 @@ const RequestForm: React.FC = () => {
                     disabled={isSaving || isSubmitting}
                     className="bg-primary hover:bg-primary/90 text-primary-foreground"
                   >
-                    {currentProductIndex < products.length - 1 ? t.request.nextProduct : t.request.reviewAndSubmit}
+                    {t.common.next}
                     <ArrowRight size={16} className="ml-2" />
                   </Button>
                 </>
@@ -1561,7 +1671,7 @@ const RequestForm: React.FC = () => {
                     disabled={isSubmitting || isSaving}
                     className="bg-primary hover:bg-primary/90 text-primary-foreground"
                   >
-                    {isSubmitting ? t.request.submitting : t.request.submitRequest}
+                    {isSubmitting ? t.request.submitting : t.request.verifyAndSubmit}
                   </Button>
                 </>
               )}
