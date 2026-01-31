@@ -13,6 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 interface SalesFollowupPanelProps {
   request: CustomerRequest;
@@ -61,9 +62,51 @@ const SalesFollowupPanel: React.FC<SalesFollowupPanelProps> = ({
   const [salesAttachments, setSalesAttachments] = useState<Attachment[]>(
     Array.isArray(request.salesAttachments) ? request.salesAttachments : []
   );
+  const [previewAttachment, setPreviewAttachment] = useState<Attachment | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [approvalComment, setApprovalComment] = useState<string>('');
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const isImageFile = (filename: string) => {
+    const ext = filename.toLowerCase().split('.').pop();
+    return ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp'].includes(ext || '');
+  };
+
+  const isPdfFile = (filename: string) => filename.toLowerCase().endsWith('.pdf');
+
+  const getPreviewUrl = (attachment: Attachment | null) => {
+    const url = attachment?.url ?? '';
+    if (!url) return '';
+    if (
+      url.startsWith('data:') ||
+      url.startsWith('http://') ||
+      url.startsWith('https://') ||
+      url.startsWith('blob:') ||
+      url.startsWith('/')
+    ) {
+      return url;
+    }
+
+    const ext = attachment?.filename?.split('.').pop()?.toLowerCase() ?? '';
+    const imageTypes: Record<string, string> = {
+      jpg: 'image/jpeg',
+      jpeg: 'image/jpeg',
+      png: 'image/png',
+      gif: 'image/gif',
+      webp: 'image/webp',
+      bmp: 'image/bmp',
+    };
+
+    if (ext === 'pdf') {
+      return `data:application/pdf;base64,${url}`;
+    }
+
+    if (imageTypes[ext]) {
+      return `data:${imageTypes[ext]};base64,${url}`;
+    }
+
+    return url;
+  };
 
   const readAsDataUrl = (file: File, index: number) =>
     new Promise<Attachment>((resolve, reject) => {
@@ -311,14 +354,14 @@ const SalesFollowupPanel: React.FC<SalesFollowupPanelProps> = ({
                     <div className="flex items-center gap-1">
                       <button
                         type="button"
-                        onClick={() => window.open(attachment.url, '_blank')}
+                        onClick={() => setPreviewAttachment(attachment)}
                         className="rounded p-1.5 text-primary hover:bg-primary/20"
                         title={t.table.view}
                       >
                         <Eye size={14} />
                       </button>
                       <a
-                        href={attachment.url}
+                        href={getPreviewUrl(attachment) || attachment.url}
                         download={attachment.filename}
                         className="rounded p-1.5 text-primary hover:bg-primary/20"
                         title={t.request.downloadFile}
@@ -411,14 +454,14 @@ const SalesFollowupPanel: React.FC<SalesFollowupPanelProps> = ({
                   <div className="flex items-center gap-1">
                     <button
                       type="button"
-                      onClick={() => window.open(attachment.url, '_blank')}
+                      onClick={() => setPreviewAttachment(attachment)}
                       className="rounded p-1.5 text-primary hover:bg-primary/20"
                       title={t.table.view}
                     >
                       <Eye size={14} />
                     </button>
                     <a
-                      href={attachment.url}
+                      href={getPreviewUrl(attachment) || attachment.url}
                       download={attachment.filename}
                       className="rounded p-1.5 text-primary hover:bg-primary/20"
                       title={t.request.downloadFile}
@@ -463,6 +506,42 @@ const SalesFollowupPanel: React.FC<SalesFollowupPanelProps> = ({
           </Button>
         </div>
       )}
+
+      <Dialog open={!!previewAttachment} onOpenChange={() => setPreviewAttachment(null)}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-auto">
+          <DialogHeader>
+            <DialogTitle className="truncate pr-8">{previewAttachment?.filename}</DialogTitle>
+          </DialogHeader>
+          <div className="flex min-h-[300px] items-center justify-center">
+            {previewAttachment && isImageFile(previewAttachment.filename) && getPreviewUrl(previewAttachment) && (
+              <img
+                src={getPreviewUrl(previewAttachment)}
+                alt={previewAttachment.filename}
+                className="max-h-[70vh] max-w-full object-contain"
+              />
+            )}
+            {previewAttachment && isPdfFile(previewAttachment.filename) && getPreviewUrl(previewAttachment) && (
+              <iframe
+                src={getPreviewUrl(previewAttachment)}
+                title={previewAttachment.filename}
+                className="h-[70vh] w-full border border-border rounded"
+              />
+            )}
+            {previewAttachment &&
+              !isImageFile(previewAttachment.filename) &&
+              !isPdfFile(previewAttachment.filename) && (
+                <div className="text-sm text-muted-foreground">
+                  {t.request.previewNotAvailable}
+                </div>
+              )}
+            {previewAttachment && !getPreviewUrl(previewAttachment) && (
+              <div className="text-sm text-muted-foreground">
+                {t.request.previewNotAvailable}
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
