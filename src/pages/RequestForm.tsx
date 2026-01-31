@@ -248,9 +248,14 @@ const RequestForm: React.FC = () => {
 
   const isReadOnly = mode === 'read_only';
   const isEditable = mode === 'create' || mode === 'draft_edit' || mode === 'clarification_edit';
+  const isAdminEdit = user?.role === 'admin' && isEditMode;
+  const isDesignRole = user?.role === 'design';
+  const isSalesRole = user?.role === 'sales';
 
   const [currentStep, setCurrentStep] = useState<FormStep>(() => (isReadOnly ? 'review' : 'chapters'));
   const [currentProductIndex, setCurrentProductIndex] = useState(0);
+  const shouldCollapseDesignPanel = Boolean(isDesignRole && existingRequest?.status === 'submitted');
+  const [isDesignPanelCollapsed, setIsDesignPanelCollapsed] = useState(shouldCollapseDesignPanel);
 
   const products = formData.products && formData.products.length
     ? formData.products
@@ -277,6 +282,10 @@ const RequestForm: React.FC = () => {
       }
     };
   }, []);
+
+  useEffect(() => {
+    setIsDesignPanelCollapsed(shouldCollapseDesignPanel);
+  }, [shouldCollapseDesignPanel, existingRequest?.id]);
 
   // If we have an ID but no request found, redirect to dashboard
   if (id && isLoading && !existingRequest) {
@@ -813,11 +822,6 @@ const RequestForm: React.FC = () => {
     }
   };
 
-  const isAdminEdit = user?.role === 'admin' && isEditMode;
-  const isDesignRole = user?.role === 'design';
-  const isSalesRole = user?.role === 'sales';
-  const shouldCollapseDesignPanel = Boolean(isDesignRole && existingRequest?.status === 'submitted');
-  const [isDesignPanelCollapsed, setIsDesignPanelCollapsed] = useState(shouldCollapseDesignPanel);
   const showDesignPanel = (user?.role === 'design' || isAdminEdit) && existingRequest &&
     (isAdminEdit || ['submitted', 'under_review', 'feasibility_confirmed', 'design_result'].includes(existingRequest.status));
   
@@ -853,9 +857,6 @@ const RequestForm: React.FC = () => {
   );
   const showDesignSummary = Boolean(existingRequest && isDesignSubmitted);
 
-  useEffect(() => {
-    setIsDesignPanelCollapsed(shouldCollapseDesignPanel);
-  }, [shouldCollapseDesignPanel, existingRequest?.id]);
 
   const renderDesignSummary = () => {
     if (!existingRequest) return null;
