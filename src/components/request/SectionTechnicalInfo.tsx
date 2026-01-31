@@ -486,6 +486,8 @@ const SectionTechnicalInfo: React.FC<SectionTechnicalInfoProps> = ({
                 onChange('brakeType', value as BrakeType);
                 if (String(value).toLowerCase() === 'na') {
                   onChange('brakeSize', '');
+                  onChange('brakePowerType', '');
+                  onChange('brakeCertificate', '');
                 }
               }}
               disabled={isReadOnly}
@@ -511,6 +513,8 @@ const SectionTechnicalInfo: React.FC<SectionTechnicalInfoProps> = ({
                 onChange('brakeType', value as BrakeType);
                 if (String(value).toLowerCase() === 'na') {
                   onChange('brakeSize', '');
+                  onChange('brakePowerType', '');
+                  onChange('brakeCertificate', '');
                 }
               }}
               disabled={isReadOnly}
@@ -570,70 +574,74 @@ const SectionTechnicalInfo: React.FC<SectionTechnicalInfoProps> = ({
         )}
 
         {/* Brake Power Type */}
-        <div className="space-y-2">
-          <Label htmlFor={fieldId('brakePowerType')} className="text-sm font-medium">
-            {t.request.brakePowerType}
-          </Label>
-          {hasBrakePowerTypeOptions ? (
-            <Select
-              value={formData.brakePowerType || ''}
-              onValueChange={(value) => onChange('brakePowerType', value)}
-              disabled={isReadOnly}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder={t.request.selectBrakePowerType} />
-              </SelectTrigger>
-              <SelectContent className="bg-card border border-border">
-                {brakePowerTypeOptions.map((option) => (
-                  <SelectItem key={option} value={option}>
-                    {translateOption(option)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          ) : (
-            <Input
-              id={fieldId('brakePowerType')}
-              value={formData.brakePowerType || ''}
-              onChange={(e) => onChange('brakePowerType', e.target.value)}
-              placeholder={t.request.selectBrakePowerType}
-              disabled={isReadOnly}
-            />
-          )}
-        </div>
+        {!isBrakeNA && (
+          <div className="space-y-2">
+            <Label htmlFor={fieldId('brakePowerType')} className="text-sm font-medium">
+              {t.request.brakePowerType}
+            </Label>
+            {hasBrakePowerTypeOptions ? (
+              <Select
+                value={formData.brakePowerType || ''}
+                onValueChange={(value) => onChange('brakePowerType', value)}
+                disabled={isReadOnly}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder={t.request.selectBrakePowerType} />
+                </SelectTrigger>
+                <SelectContent className="bg-card border border-border">
+                  {brakePowerTypeOptions.map((option) => (
+                    <SelectItem key={option} value={option}>
+                      {translateOption(option)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            ) : (
+              <Input
+                id={fieldId('brakePowerType')}
+                value={formData.brakePowerType || ''}
+                onChange={(e) => onChange('brakePowerType', e.target.value)}
+                placeholder={t.request.selectBrakePowerType}
+                disabled={isReadOnly}
+              />
+            )}
+          </div>
+        )}
 
         {/* Brake Certificate */}
-        <div className="space-y-2">
-          <Label htmlFor={fieldId('brakeCertificate')} className="text-sm font-medium">
-            {t.request.brakeCertificate}
-          </Label>
-          {hasBrakeCertificateOptions ? (
-            <Select
-              value={formData.brakeCertificate || ''}
-              onValueChange={(value) => onChange('brakeCertificate', value)}
-              disabled={isReadOnly}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder={t.request.selectBrakeCertificate} />
-              </SelectTrigger>
-              <SelectContent className="bg-card border border-border">
-                {brakeCertificateOptions.map((option) => (
-                  <SelectItem key={option} value={option}>
-                    {translateOption(option)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          ) : (
-            <Input
-              id={fieldId('brakeCertificate')}
-              value={formData.brakeCertificate || ''}
-              onChange={(e) => onChange('brakeCertificate', e.target.value)}
-              placeholder={t.request.selectBrakeCertificate}
-              disabled={isReadOnly}
-            />
-          )}
-        </div>
+        {!isBrakeNA && (
+          <div className="space-y-2">
+            <Label htmlFor={fieldId('brakeCertificate')} className="text-sm font-medium">
+              {t.request.brakeCertificate}
+            </Label>
+            {hasBrakeCertificateOptions ? (
+              <Select
+                value={formData.brakeCertificate || ''}
+                onValueChange={(value) => onChange('brakeCertificate', value)}
+                disabled={isReadOnly}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder={t.request.selectBrakeCertificate} />
+                </SelectTrigger>
+                <SelectContent className="bg-card border border-border">
+                  {brakeCertificateOptions.map((option) => (
+                    <SelectItem key={option} value={option}>
+                      {translateOption(option)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            ) : (
+              <Input
+                id={fieldId('brakeCertificate')}
+                value={formData.brakeCertificate || ''}
+                onChange={(e) => onChange('brakeCertificate', e.target.value)}
+                placeholder={t.request.selectBrakeCertificate}
+                disabled={isReadOnly}
+              />
+            )}
+          </div>
+        )}
 
         {/* Main Body Section Type */}
         <div className="space-y-2">

@@ -674,11 +674,12 @@ const RequestForm: React.FC = () => {
             status: 'submitted',
           }) as any
         );
+        // Show confirmation screen even if toast fails.
+        showSubmitConfirmation();
         toast({
           title: t.request.requestSubmitted,
           description: `${t.dashboard.requests} ${newRequest.id} ${t.request.requestSubmittedDesc}`,
         });
-        showSubmitConfirmation();
       } else if (existingRequest) {
         const isResubmission =
           existingRequest.status === 'draft' || existingRequest.status === 'clarification_needed';
