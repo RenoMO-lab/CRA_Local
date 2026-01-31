@@ -668,14 +668,14 @@ const RequestForm: React.FC = () => {
       await new Promise(resolve => setTimeout(resolve, 500));
       
       if (isCreateMode) {
+        // Show confirmation promptly to avoid a stuck UI if the response is slow.
+        showSubmitConfirmation();
         const newRequest = await createRequest(
           prepareRequestPayload({
             ...formData as any,
             status: 'submitted',
           }) as any
         );
-        // Show confirmation screen even if toast fails.
-        showSubmitConfirmation();
         toast({
           title: t.request.requestSubmitted,
           description: `${t.dashboard.requests} ${newRequest.id} ${t.request.requestSubmittedDesc}`,
@@ -704,6 +704,13 @@ const RequestForm: React.FC = () => {
         }
       }
     } catch (error) {
+      if (isCreateMode) {
+        setShowSubmitSuccess(false);
+        if (submitRedirectRef.current) {
+          window.clearTimeout(submitRedirectRef.current);
+          submitRedirectRef.current = null;
+        }
+      }
       toast({
         title: t.request.error,
         description: t.request.failedSubmit,
