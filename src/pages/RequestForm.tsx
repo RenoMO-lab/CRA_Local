@@ -313,7 +313,7 @@ const RequestForm: React.FC = () => {
 
   if (showSubmitSuccess) {
     return (
-      <div className="min-h-[70vh] flex items-center justify-center bg-gradient-to-br from-primary/10 via-background to-background">
+      <div className="min-h-[70vh] flex items-center justify-center bg-background">
         <div className="bg-card/90 border border-primary/20 rounded-2xl p-8 md:p-12 text-center space-y-4 shadow-lg backdrop-blur">
           <div className="mx-auto h-14 w-14 md:h-16 md:w-16 rounded-full bg-primary/10 flex items-center justify-center">
             <CheckCircle className="h-8 w-8 md:h-9 md:w-9 text-primary" />
