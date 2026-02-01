@@ -1717,6 +1717,7 @@ const RequestForm: React.FC = () => {
               readOnly={!canEditSalesPanel}
               forceEnableActions={isAdminEdit}
               isAdmin={user?.role === 'admin'}
+              isSales={isSalesRole}
             />
           )}
         </div>

@@ -32,6 +32,7 @@ interface SalesFollowupPanelProps {
   readOnly?: boolean;
   forceEnableActions?: boolean;
   isAdmin?: boolean;
+  isSales?: boolean;
 }
 
 const SalesFollowupPanel: React.FC<SalesFollowupPanelProps> = ({
@@ -42,6 +43,7 @@ const SalesFollowupPanel: React.FC<SalesFollowupPanelProps> = ({
   readOnly = false,
   forceEnableActions = false,
   isAdmin = false,
+  isSales = false,
 }) => {
   const { t } = useLanguage();
   const [salesFinalPrice, setSalesFinalPrice] = useState<string>(
@@ -263,15 +265,19 @@ const SalesFollowupPanel: React.FC<SalesFollowupPanelProps> = ({
     onUpdateStatus('gm_approved', approvalComment?.trim() || undefined);
   };
 
+  const handleRejectDeal = () => {
+    onUpdateStatus('sales_followup', approvalComment?.trim() || undefined);
+  };
+
   const canStartFollowup = forceEnableActions || request.status === 'costing_complete';
-  const canEditSales = forceEnableActions || ['sales_followup', 'gm_approval_pending'].includes(request.status);
-  const canSubmitForApproval = canEditSales && request.status !== 'gm_approval_pending';
+  const canEditSales = forceEnableActions || (isSales && request.status === 'sales_followup');
+  const canSubmitForApproval = isSales && canEditSales;
   const canApprove = isAdmin && (forceEnableActions || request.status === 'gm_approval_pending');
   const vatRateValid = salesVatMode === 'without' || (salesVatRate !== '' && !isNaN(parseFloat(salesVatRate)));
   const isValidSubmission = salesFinalPrice && parseFloat(salesFinalPrice) > 0 && vatRateValid;
   const incotermDisplay = salesIncoterm === 'other' ? salesIncotermOther : salesIncoterm;
 
-  const showEditor = !readOnly && canEditSales && request.status !== 'gm_approved';
+  const showEditor = !readOnly && isSales && request.status === 'sales_followup';
   const hasSalesData = Boolean(
     request.salesFinalPrice ||
       request.salesFeedbackComment ||
@@ -551,6 +557,15 @@ const SalesFollowupPanel: React.FC<SalesFollowupPanelProps> = ({
         </div>
       )}
 
+      {!showEditor && isSales && request.status === 'gm_approval_pending' && (
+        <Button
+          disabled
+          className="w-full bg-info/10 text-info border border-info/30"
+        >
+          {t.panels.submittedToGm}
+        </Button>
+      )}
+
       {canApprove && (
         <div className="border-t border-border/60 pt-6 space-y-4">
           <div className="flex items-center gap-2">
@@ -578,6 +593,14 @@ const SalesFollowupPanel: React.FC<SalesFollowupPanelProps> = ({
             {isUpdating && <Loader2 size={16} className="mr-2 animate-spin" />}
             <CheckCircle size={16} className="mr-2" />
             {t.panels.approveDeal}
+          </Button>
+          <Button
+            onClick={handleRejectDeal}
+            disabled={isUpdating}
+            variant="outline"
+            className="w-full border-destructive text-destructive hover:bg-destructive/10"
+          >
+            {t.panels.rejectDeal}
           </Button>
         </div>
       )}
