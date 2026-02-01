@@ -244,7 +244,7 @@ const SectionAdditionalInfo: React.FC<SectionAdditionalInfoProps> = ({
 
       {/* Preview Dialog */}
       <Dialog open={!!previewAttachment} onOpenChange={() => setPreviewAttachment(null)}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-auto">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-auto" onInteractOutside={(event) => event.preventDefault()} onEscapeKeyDown={(event) => event.preventDefault()}>
           <DialogHeader>
             <DialogTitle className="truncate pr-8">{previewAttachment?.filename}</DialogTitle>
           </DialogHeader>
@@ -285,3 +285,4 @@ const SectionAdditionalInfo: React.FC<SectionAdditionalInfoProps> = ({
 };
 
 export default SectionAdditionalInfo;
+

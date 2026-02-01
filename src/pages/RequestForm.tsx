@@ -1527,7 +1527,7 @@ const RequestForm: React.FC = () => {
           )}
 
           <Dialog open={!!designPreviewAttachment} onOpenChange={() => setDesignPreviewAttachment(null)}>
-            <DialogContent className="max-w-4xl max-h-[90vh] overflow-auto">
+            <DialogContent className="max-w-4xl max-h-[90vh] overflow-auto" onInteractOutside={(event) => event.preventDefault()} onEscapeKeyDown={(event) => event.preventDefault()}>
               <DialogHeader>
                 <DialogTitle className="truncate pr-8">{designPreviewAttachment?.filename}</DialogTitle>
               </DialogHeader>
@@ -1842,3 +1842,4 @@ const RequestForm: React.FC = () => {
 };
 
 export default RequestForm;
+
