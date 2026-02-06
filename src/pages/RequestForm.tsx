@@ -25,6 +25,23 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 
 type FormStep = 'chapters' | 'product' | 'review';
 
+const ROC_STANDARD = 'As per ROC Standard';
+const ROC_STANDARD_KEY = ROC_STANDARD.toLowerCase();
+
+const isRocStandardValue = (value: unknown) =>
+  typeof value === 'string' && value.trim().toLowerCase() === ROC_STANDARD_KEY;
+
+const isNumericLike = (value: unknown) => {
+  if (typeof value === 'number') return !Number.isNaN(value);
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    return trimmed !== '' && !Number.isNaN(Number(trimmed));
+  }
+  return false;
+};
+
+const isRocStandardOrNumeric = (value: unknown) => isRocStandardValue(value) || isNumericLike(value);
+
 const getInitialProduct = (): RequestProduct => ({
   axleLocation: '',
   axleLocationOther: '',
@@ -602,19 +619,19 @@ const RequestForm: React.FC = () => {
     if (product.configurationType === 'other' && !product.configurationTypeOther?.trim()) {
       newErrors[`${prefix}configurationTypeOther`] = t.request.specifyConfigurationType + ' ' + t.common.required.toLowerCase();
     }
-    if (!product.loadsKg) {
+    if (!isRocStandardOrNumeric(product.loadsKg)) {
       newErrors[`${prefix}loadsKg`] = t.request.loads + ' ' + t.common.required.toLowerCase();
     }
     if (product.quantity === null || product.quantity === undefined || product.quantity === 0) {
       newErrors[`${prefix}quantity`] = t.request.quantity + ' ' + t.common.required.toLowerCase();
     }
-    if (!product.speedsKmh) {
+    if (!isRocStandardOrNumeric(product.speedsKmh)) {
       newErrors[`${prefix}speedsKmh`] = t.request.speeds + ' ' + t.common.required.toLowerCase();
     }
     if (!product.tyreSize?.trim()) {
       newErrors[`${prefix}tyreSize`] = t.request.tyreSize + ' ' + t.common.required.toLowerCase();
     }
-    if (!product.trackMm) {
+    if (!isRocStandardOrNumeric(product.trackMm)) {
       newErrors[`${prefix}trackMm`] = t.request.track + ' ' + t.common.required.toLowerCase();
     }
     if (!product.brakeType) {

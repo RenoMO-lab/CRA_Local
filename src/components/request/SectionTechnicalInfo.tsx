@@ -62,7 +62,11 @@ const SectionTechnicalInfo: React.FC<SectionTechnicalInfoProps> = ({
   idPrefix,
 }) => {
   const { t, translateOption } = useLanguage();
+  const ROC_STANDARD = 'As per ROC Standard';
+  const rocStandardKey = ROC_STANDARD.toLowerCase();
+  const rocStandardLabel = translateOption(ROC_STANDARD);
   const fieldId = (suffix: string) => (idPrefix ? `${idPrefix}-${suffix}` : suffix);
+  const rocListId = idPrefix ? `${idPrefix}-roc-standard-options` : 'roc-standard-options';
   const showConfigurationTypeOther = formData.configurationType === 'other';
   const showAxleLocationOther = formData.axleLocation === 'other';
   const showArticulationTypeOther = formData.articulationType === 'other';
@@ -70,6 +74,16 @@ const SectionTechnicalInfo: React.FC<SectionTechnicalInfoProps> = ({
   const showWheelBase = articulationValue.includes('steering');
   const brakeTypeValue = String(formData.brakeType ?? '').toLowerCase();
   const isBrakeNA = brakeTypeValue === 'na' || brakeTypeValue === 'n/a' || brakeTypeValue === 'n.a';
+  const hasRocStandardOption = (options: string[]) =>
+    options.some((option) => option.trim().toLowerCase() === rocStandardKey);
+
+  const parseNumericOrRoc = (rawValue: string) => {
+    const trimmed = rawValue.trim();
+    if (!trimmed) return null;
+    if (trimmed.toLowerCase() === rocStandardKey) return ROC_STANDARD;
+    const parsed = Number(trimmed);
+    return Number.isNaN(parsed) ? trimmed : parsed;
+  };
 
   const hasRepeatabilityOptions = repeatabilityOptions.length > 0;
   const hasConfigurationOptions = configurationTypeOptions.length > 0;
@@ -86,6 +100,7 @@ const SectionTechnicalInfo: React.FC<SectionTechnicalInfoProps> = ({
 
   const normalizeBrakeType = (raw: string): BrakeType => {
     const v = raw.trim().toLowerCase();
+    if (v === rocStandardKey) return ROC_STANDARD;
     if (v === 'drum') return 'drum';
     if (v === 'disk' || v === 'disc') return 'disk';
     if (v === 'n/a' || v === 'na' || v === 'n.a') return 'na';
@@ -363,10 +378,12 @@ const SectionTechnicalInfo: React.FC<SectionTechnicalInfoProps> = ({
           </Label>
           <Input
             id={fieldId('loadsKg')}
-            type="number"
-            value={formData.loadsKg || ''}
-            onChange={(e) => onChange('loadsKg', e.target.value ? parseInt(e.target.value) : null)}
+            type="text"
+            inputMode="numeric"
+            value={formData.loadsKg ?? ''}
+            onChange={(e) => onChange('loadsKg', parseNumericOrRoc(e.target.value))}
             placeholder={t.request.loadsExample}
+            list={rocListId}
             disabled={isReadOnly}
             className={errors.loadsKg ? 'border-destructive' : ''}
           />
@@ -382,10 +399,12 @@ const SectionTechnicalInfo: React.FC<SectionTechnicalInfoProps> = ({
           </Label>
           <Input
             id={fieldId('speedsKmh')}
-            type="number"
-            value={formData.speedsKmh || ''}
-            onChange={(e) => onChange('speedsKmh', e.target.value ? parseInt(e.target.value) : null)}
+            type="text"
+            inputMode="numeric"
+            value={formData.speedsKmh ?? ''}
+            onChange={(e) => onChange('speedsKmh', parseNumericOrRoc(e.target.value))}
             placeholder={t.request.speedsExample}
+            list={rocListId}
             disabled={isReadOnly}
             className={errors.speedsKmh ? 'border-destructive' : ''}
           />
@@ -404,6 +423,7 @@ const SectionTechnicalInfo: React.FC<SectionTechnicalInfoProps> = ({
             value={formData.tyreSize || ''}
             onChange={(e) => onChange('tyreSize', e.target.value)}
             placeholder={t.request.tyreSizeExample}
+            list={rocListId}
             disabled={isReadOnly}
             className={errors.tyreSize ? 'border-destructive' : ''}
           />
@@ -419,10 +439,12 @@ const SectionTechnicalInfo: React.FC<SectionTechnicalInfoProps> = ({
           </Label>
           <Input
             id={fieldId('trackMm')}
-            type="number"
-            value={formData.trackMm || ''}
-            onChange={(e) => onChange('trackMm', e.target.value ? parseInt(e.target.value) : null)}
+            type="text"
+            inputMode="numeric"
+            value={formData.trackMm ?? ''}
+            onChange={(e) => onChange('trackMm', parseNumericOrRoc(e.target.value))}
             placeholder={t.request.trackExample}
+            list={rocListId}
             disabled={isReadOnly}
             className={errors.trackMm ? 'border-destructive' : ''}
           />
@@ -454,6 +476,7 @@ const SectionTechnicalInfo: React.FC<SectionTechnicalInfoProps> = ({
               value={formData.wheelBase || ''}
               onChange={(e) => onChange('wheelBase', e.target.value)}
               placeholder={t.request.steeringAxleParam}
+              list={rocListId}
               disabled={isReadOnly}
             />
             <p className="text-xs text-muted-foreground">{t.request.steeringAxleParam}</p>
@@ -470,6 +493,7 @@ const SectionTechnicalInfo: React.FC<SectionTechnicalInfoProps> = ({
             value={formData.finish || t.request.blackPrimerDefault}
             onChange={(e) => onChange('finish', e.target.value)}
             placeholder={t.request.blackPrimerDefault}
+            list={rocListId}
             disabled={isReadOnly}
           />
         </div>
@@ -504,6 +528,9 @@ const SectionTechnicalInfo: React.FC<SectionTechnicalInfoProps> = ({
                     </SelectItem>
                   );
                 })}
+                {!hasRocStandardOption(brakeTypeOptions) && (
+                  <SelectItem value={ROC_STANDARD}>{rocStandardLabel}</SelectItem>
+                )}
               </SelectContent>
             </Select>
           ) : (
@@ -526,6 +553,7 @@ const SectionTechnicalInfo: React.FC<SectionTechnicalInfoProps> = ({
                 <SelectItem value="drum">{t.request.drum}</SelectItem>
                 <SelectItem value="disk">{t.request.disk}</SelectItem>
                 <SelectItem value="na">{t.request.na}</SelectItem>
+                <SelectItem value={ROC_STANDARD}>{rocStandardLabel}</SelectItem>
               </SelectContent>
             </Select>
           )}
@@ -663,6 +691,9 @@ const SectionTechnicalInfo: React.FC<SectionTechnicalInfoProps> = ({
                     {translateOption(option)}
                   </SelectItem>
                 ))}
+                {!hasRocStandardOption(mainBodySectionTypeOptions) && (
+                  <SelectItem value={ROC_STANDARD}>{rocStandardLabel}</SelectItem>
+                )}
               </SelectContent>
             </Select>
           ) : (
@@ -696,6 +727,9 @@ const SectionTechnicalInfo: React.FC<SectionTechnicalInfoProps> = ({
                     {translateOption(option)}
                   </SelectItem>
                 ))}
+                {!hasRocStandardOption(clientSealingRequestOptions) && (
+                  <SelectItem value={ROC_STANDARD}>{rocStandardLabel}</SelectItem>
+                )}
               </SelectContent>
             </Select>
           ) : (
@@ -729,6 +763,9 @@ const SectionTechnicalInfo: React.FC<SectionTechnicalInfoProps> = ({
                     {translateOption(option)}
                   </SelectItem>
                 ))}
+                {!hasRocStandardOption(cupLogoOptions) && (
+                  <SelectItem value={ROC_STANDARD}>{rocStandardLabel}</SelectItem>
+                )}
               </SelectContent>
             </Select>
           ) : (
@@ -762,6 +799,9 @@ const SectionTechnicalInfo: React.FC<SectionTechnicalInfoProps> = ({
                     {translateOption(suspension)}
                   </SelectItem>
                 ))}
+                {!hasRocStandardOption(suspensionOptions) && (
+                  <SelectItem value={ROC_STANDARD}>{rocStandardLabel}</SelectItem>
+                )}
               </SelectContent>
             </Select>
           ) : (
@@ -779,6 +819,10 @@ const SectionTechnicalInfo: React.FC<SectionTechnicalInfoProps> = ({
           )}
         </div>
       </div>
+
+      <datalist id={rocListId}>
+        <option value={ROC_STANDARD} label={rocStandardLabel} />
+      </datalist>
     </div>
   );
 };

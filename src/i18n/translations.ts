@@ -624,6 +624,7 @@ export const translations = {
       'Industrial Axles': 'Industrial Axles',
       'Stud Axles': 'Stud Axles',
       'Single Axles': 'Single Axles',
+      'As per ROC Standard': 'As per ROC Standard',
       // Client Application
       'Dry': 'Dry',
       'Wet': 'Wet',
@@ -1329,6 +1330,7 @@ export const translations = {
       'Industrial Axles': 'Essieux industriels',
       'Stud Axles': 'Essieux à goujons',
       'Single Axles': 'Essieux simples',
+      'As per ROC Standard': 'Selon la norme ROC',
       // Client Application
       'Dry': 'Sec',
       'Wet': 'Humide',
@@ -2034,6 +2036,7 @@ export const translations = {
       'Industrial Axles': '工业车桥',
       'Stud Axles': '螺柱车桥',
       'Single Axles': '单轴',
+      'As per ROC Standard': '按ROC标准',
       // Client Application
       'Dry': '干燥',
       'Wet': '潮湿',
