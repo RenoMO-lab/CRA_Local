@@ -49,7 +49,7 @@ const SectionClientApplication: React.FC<SectionClientApplicationProps> = ({
         {t.request.clientApplication}
       </h3>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
         {/* Working Condition */}
         <div className="space-y-2">
           <Label htmlFor="workingCondition" className="text-sm font-medium">
@@ -95,7 +95,7 @@ const SectionClientApplication: React.FC<SectionClientApplicationProps> = ({
 
         {/* Working Condition Other */}
         {showWorkingConditionOther && hasWorkingConditionOptions && (
-          <div className="space-y-2">
+          <div className="space-y-2 md:col-span-2">
             <Label htmlFor="workingConditionOther" className="text-sm font-medium">
               {t.request.specifyWorkingCondition} <span className="text-destructive">*</span>
             </Label>
@@ -114,7 +114,7 @@ const SectionClientApplication: React.FC<SectionClientApplicationProps> = ({
         )}
 
         {/* Application Vehicle */}
-        <div className="sm:col-span-2 lg:col-span-2 space-y-2">
+        <div className="space-y-2">
           <Label htmlFor="applicationVehicle" className="text-sm font-medium">
             {t.request.applicationVehicle} <span className="text-destructive">*</span>
           </Label>
@@ -158,7 +158,7 @@ const SectionClientApplication: React.FC<SectionClientApplicationProps> = ({
 
         {/* Application Vehicle Other - shown when "Other" is selected */}
         {showApplicationVehicleOther && hasApplicationVehicleOptions && (
-          <div className="space-y-2">
+          <div className="space-y-2 md:col-span-2">
             <Label htmlFor="applicationVehicleOther" className="text-sm font-medium">
               {t.request.specifyVehicle} <span className="text-destructive">*</span>
             </Label>
@@ -221,7 +221,7 @@ const SectionClientApplication: React.FC<SectionClientApplicationProps> = ({
 
         {/* Usage Type Other */}
         {showUsageTypeOther && hasUsageTypeOptions && (
-          <div className="space-y-2">
+          <div className="space-y-2 md:col-span-2">
             <Label htmlFor="usageTypeOther" className="text-sm font-medium">
               {t.request.specifyUsageType} <span className="text-destructive">*</span>
             </Label>
@@ -284,7 +284,7 @@ const SectionClientApplication: React.FC<SectionClientApplicationProps> = ({
 
         {/* Environment Other */}
         {showEnvironmentOther && hasEnvironmentOptions && (
-          <div className="space-y-2">
+          <div className="space-y-2 md:col-span-2">
             <Label htmlFor="environmentOther" className="text-sm font-medium">
               {t.request.specifyEnvironment} <span className="text-destructive">*</span>
             </Label>

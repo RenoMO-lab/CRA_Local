@@ -39,60 +39,62 @@ const SectionExpectedDelivery: React.FC<SectionExpectedDeliveryProps> = ({
         {t.request.expectedDelivery}
       </h3>
 
-      <div className="space-y-3">
-        {hasOptions ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {expectedDeliveryOptions.map((option) => (
-              <label
-                key={option}
-                className="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-sm"
-              >
-                <Checkbox
-                  checked={selections.includes(option)}
-                  onCheckedChange={() => toggleSelection(option)}
-                  disabled={isReadOnly}
-                />
-                <span className="text-foreground">{translateOption(option)}</span>
-              </label>
-            ))}
-          </div>
-        ) : (
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
+        <div className="space-y-3 lg:col-span-2">
+          {hasOptions ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {expectedDeliveryOptions.map((option) => (
+                <label
+                  key={option}
+                  className="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-sm"
+                >
+                  <Checkbox
+                    checked={selections.includes(option)}
+                    onCheckedChange={() => toggleSelection(option)}
+                    disabled={isReadOnly}
+                  />
+                  <span className="text-foreground">{translateOption(option)}</span>
+                </label>
+              ))}
+            </div>
+          ) : (
+            <Input
+              id="expectedDeliverySelections"
+              value={selections.join(', ')}
+              onChange={(e) => {
+                const next = e.target.value
+                  .split(',')
+                  .map((item) => item.trim())
+                  .filter(Boolean);
+                onChange('expectedDeliverySelections', next);
+              }}
+              placeholder={t.request.enterExpectedDelivery}
+              disabled={isReadOnly}
+              className={errors.expectedDeliverySelections ? 'border-destructive' : ''}
+            />
+          )}
+
+          {errors.expectedDeliverySelections && (
+            <p className="text-xs text-destructive">{errors.expectedDeliverySelections}</p>
+          )}
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="clientExpectedDeliveryDate" className="text-sm font-medium">
+            {t.request.clientExpectedDeliveryDate} <span className="text-destructive">*</span>
+          </Label>
           <Input
-            id="expectedDeliverySelections"
-            value={selections.join(', ')}
-            onChange={(e) => {
-              const next = e.target.value
-                .split(',')
-                .map((item) => item.trim())
-                .filter(Boolean);
-              onChange('expectedDeliverySelections', next);
-            }}
-            placeholder={t.request.enterExpectedDelivery}
+            id="clientExpectedDeliveryDate"
+            type="date"
+            value={formData.clientExpectedDeliveryDate ?? ''}
+            onChange={(e) => onChange('clientExpectedDeliveryDate', e.target.value)}
             disabled={isReadOnly}
-            className={errors.expectedDeliverySelections ? 'border-destructive' : ''}
+            className={errors.clientExpectedDeliveryDate ? 'border-destructive' : ''}
           />
-        )}
-
-        {errors.expectedDeliverySelections && (
-          <p className="text-xs text-destructive">{errors.expectedDeliverySelections}</p>
-        )}
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="clientExpectedDeliveryDate" className="text-sm font-medium">
-          {t.request.clientExpectedDeliveryDate} <span className="text-destructive">*</span>
-        </Label>
-        <Input
-          id="clientExpectedDeliveryDate"
-          type="date"
-          value={formData.clientExpectedDeliveryDate ?? ''}
-          onChange={(e) => onChange('clientExpectedDeliveryDate', e.target.value)}
-          disabled={isReadOnly}
-          className={errors.clientExpectedDeliveryDate ? 'border-destructive' : ''}
-        />
-        {errors.clientExpectedDeliveryDate && (
-          <p className="text-xs text-destructive">{errors.clientExpectedDeliveryDate}</p>
-        )}
+          {errors.clientExpectedDeliveryDate && (
+            <p className="text-xs text-destructive">{errors.clientExpectedDeliveryDate}</p>
+          )}
+        </div>
       </div>
     </div>
   );
