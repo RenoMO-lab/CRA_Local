@@ -53,6 +53,17 @@ const safeParseTemplates = (raw) => {
   return safeParseFlowMap(raw);
 };
 
+const ensureTemplatesColumn = async (pool) => {
+  // Older DBs may not have this column yet. Avoid breaking "Save changes" by creating it lazily.
+  // Note: requires DDL privileges for the SQL user.
+  const { recordset } = await pool
+    .request()
+    .query("SELECT COL_LENGTH('dbo.m365_mail_settings', 'templates_json') AS col_len");
+  const colLen = recordset?.[0]?.col_len ?? null;
+  if (colLen !== null) return;
+  await pool.request().query("ALTER TABLE dbo.m365_mail_settings ADD templates_json NVARCHAR(MAX) NULL");
+};
+
 export const getM365Settings = async (pool) => {
   const { recordset } = await pool.request().query("SELECT TOP 1 * FROM m365_mail_settings WHERE id = 1");
   const row = recordset[0] ?? {};
@@ -74,6 +85,8 @@ export const getM365Settings = async (pool) => {
 };
 
 export const updateM365Settings = async (pool, input) => {
+  await ensureTemplatesColumn(pool);
+
   const enabled = input?.enabled ? 1 : 0;
   const tenantId = String(input?.tenantId ?? "").trim();
   const clientId = String(input?.clientId ?? "").trim();
