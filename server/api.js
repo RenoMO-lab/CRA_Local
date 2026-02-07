@@ -50,10 +50,38 @@ const safeJson = (value) => {
   return value;
 };
 
+const escapeHtml = (value) =>
+  String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+
+const humanizeStatus = (status) =>
+  String(status ?? "")
+    .trim()
+    .replace(/_/g, " ")
+    .replace(/\s+/g, " ")
+    .replace(/\b\w/g, (m) => m.toUpperCase());
+
 const buildRequestLink = (baseUrl, requestId) => {
   const base = String(baseUrl ?? "").trim().replace(/\/+$/, "");
   if (!base) return "";
   return `${base}/requests/${encodeURIComponent(requestId)}`;
+};
+
+const buildDashboardLink = (baseUrl) => {
+  const base = String(baseUrl ?? "").trim().replace(/\/+$/, "");
+  if (!base) return "";
+  return `${base}/dashboard`;
+};
+
+const buildPublicAssetLink = (baseUrl, assetPath) => {
+  const base = String(baseUrl ?? "").trim().replace(/\/+$/, "");
+  const pathPart = String(assetPath ?? "").trim().replace(/^\/+/, "");
+  if (!base || !pathPart) return "";
+  return `${base}/${pathPart}`;
 };
 
 const resolveRecipientsForStatus = (settings, status) => {
@@ -103,23 +131,165 @@ const resolveRecipientsForStatus = (settings, status) => {
   }
 };
 
-const renderStatusEmailHtml = ({ request, newStatus, actorName, comment, link }) => {
+const statusBadgeStyles = (status) => {
+  const s = String(status ?? "");
+  if (["clarification_needed", "gm_rejected"].includes(s)) {
+    return { bg: "#FEE2E2", text: "#991B1B", border: "#FCA5A5" };
+  }
+  if (["gm_approved", "costing_complete", "feasibility_confirmed", "closed"].includes(s)) {
+    return { bg: "#DCFCE7", text: "#166534", border: "#86EFAC" };
+  }
+  if (["submitted", "under_review", "in_costing", "gm_approval_pending", "sales_followup"].includes(s)) {
+    return { bg: "#DBEAFE", text: "#1E40AF", border: "#93C5FD" };
+  }
+  return { bg: "#E5E7EB", text: "#374151", border: "#D1D5DB" };
+};
+
+const formatIsoUtc = (iso) => {
+  const d = iso ? new Date(iso) : null;
+  if (!d || Number.isNaN(d.getTime())) return "";
+  return `${d.toISOString().replace("T", " ").slice(0, 19)} UTC`;
+};
+
+const renderStatusEmailHtml = ({ request, newStatus, actorName, comment, link, dashboardLink, logoUrl }) => {
   const safeComment = String(comment ?? "").trim();
   const client = String(request?.clientName ?? "").trim();
+  const contact = String(request?.clientContact ?? "").trim();
+  const country = String(request?.country ?? "").trim();
+  const appVehicle = String(request?.applicationVehicle ?? "").trim();
+  const expectedQty = request?.expectedQty ?? null;
+  const expectedDeliveryDate = String(request?.clientExpectedDeliveryDate ?? "").trim();
+
   const rid = String(request?.id ?? "").trim();
   const actor = String(actorName ?? "").trim();
   const status = String(newStatus ?? "").trim();
-  const linkHtml = link ? `<p><a href="${link}">Open request</a></p>` : "";
-  const commentHtml = safeComment ? `<p><b>Comment:</b><br/>${safeComment.replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\n/g, "<br/>")}</p>` : "";
+  const statusLabel = humanizeStatus(status) || status || "Updated";
+  const updatedAt = formatIsoUtc(request?.updatedAt ?? request?.createdAt);
+
+  const badge = statusBadgeStyles(status);
+  const openRequestHref = link ? escapeHtml(link) : "";
+  const openDashboardHref = dashboardLink ? escapeHtml(dashboardLink) : "";
+  const logoImg = logoUrl
+    ? `<img src="${escapeHtml(logoUrl)}" width="120" alt="MONROC" style="display:block; border:0; outline:none; text-decoration:none; height:auto;" />`
+    : `<div style="font-weight:800; letter-spacing:0.5px; color:#111827;">MONROC</div>`;
+
+  const commentHtml = safeComment
+    ? `
+      <tr>
+        <td style="padding:16px 24px 0 24px;">
+          <div style="font-size:12px; color:#6B7280; text-transform:uppercase; letter-spacing:0.08em;">Comment</div>
+          <div style="margin-top:6px; font-size:14px; color:#111827; white-space:pre-wrap;">${escapeHtml(safeComment)}</div>
+        </td>
+      </tr>
+    `.trim()
+    : "";
+
+  const kvRow = (label, value) => {
+    const v = String(value ?? "").trim();
+    if (!v) return "";
+    return `
+      <tr>
+        <td style="padding:6px 0; font-size:12px; color:#6B7280; width:160px; vertical-align:top;">${escapeHtml(label)}</td>
+        <td style="padding:6px 0; font-size:14px; color:#111827; vertical-align:top;">${escapeHtml(v)}</td>
+      </tr>
+    `.trim();
+  };
+
+  const qtyText = typeof expectedQty === "number" ? String(expectedQty) : "";
 
   return `
-    <div style="font-family: Arial, sans-serif; font-size: 14px; line-height: 1.4;">
-      <p><b>Request</b>: ${rid}${client ? ` (${client})` : ""}</p>
-      <p><b>New status</b>: ${status}</p>
-      ${actor ? `<p><b>Changed by</b>: ${actor}</p>` : ""}
-      ${commentHtml}
-      ${linkHtml}
-    </div>
+  <div style="margin:0; padding:0; background:#F6F8FB;">
+    <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background:#F6F8FB; width:100%;">
+      <tr>
+        <td align="center" style="padding:28px 12px;">
+          <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="640" style="width:640px; max-width:640px;">
+            <tr>
+              <td style="padding:0 0 12px 0;">
+                <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
+                  <tr>
+                    <td align="left" style="vertical-align:middle;">${logoImg}</td>
+                    <td align="right" style="vertical-align:middle;">
+                      <div style="font-family: Arial, sans-serif; font-size:12px; color:#6B7280;">CRA Notification</div>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+
+            <tr>
+              <td style="background:#FFFFFF; border:1px solid #E5E7EB; border-radius:12px; overflow:hidden; font-family: Arial, sans-serif;">
+                <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
+                  <tr>
+                    <td style="padding:20px 24px 10px 24px;">
+                      <div style="font-size:18px; font-weight:700; color:#111827;">Request Update</div>
+                      <div style="margin-top:6px;">
+                        <span style="display:inline-block; padding:6px 10px; border-radius:999px; background:${badge.bg}; color:${badge.text}; border:1px solid ${badge.border}; font-size:12px; font-weight:700;">
+                          ${escapeHtml(statusLabel)}
+                        </span>
+                        ${updatedAt ? `<span style="margin-left:10px; font-size:12px; color:#6B7280;">${escapeHtml(updatedAt)}</span>` : ""}
+                      </div>
+                    </td>
+                  </tr>
+
+                  <tr>
+                    <td style="padding:0 24px 6px 24px;">
+                      <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border-top:1px solid #E5E7EB;">
+                        <tr><td style="height:10px; line-height:10px;">&nbsp;</td></tr>
+                      </table>
+                    </td>
+                  </tr>
+
+                  <tr>
+                    <td style="padding:0 24px 0 24px;">
+                      <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
+                        ${kvRow("Request ID", rid)}
+                        ${kvRow("Client", client)}
+                        ${kvRow("Contact", contact)}
+                        ${kvRow("Country", country)}
+                        ${kvRow("Application Vehicle", appVehicle)}
+                        ${kvRow("Expected Qty", qtyText)}
+                        ${kvRow("Expected Delivery Date", expectedDeliveryDate)}
+                        ${actor ? kvRow("Changed by", actor) : ""}
+                      </table>
+                    </td>
+                  </tr>
+
+                  ${commentHtml}
+
+                  <tr>
+                    <td style="padding:20px 24px 24px 24px;">
+                      <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+                        <tr>
+                          <td style="padding-right:10px;">
+                            <a href="${openRequestHref}" style="display:inline-block; background:#D71920; color:#FFFFFF; text-decoration:none; padding:12px 16px; border-radius:8px; font-weight:700; font-size:14px;">
+                              Open request
+                            </a>
+                          </td>
+                          <td>
+                            <a href="${openDashboardHref}" style="display:inline-block; background:#FFFFFF; color:#111827; text-decoration:none; padding:12px 16px; border-radius:8px; border:1px solid #E5E7EB; font-weight:700; font-size:14px;">
+                              Open dashboard
+                            </a>
+                          </td>
+                        </tr>
+                      </table>
+
+                      ${openRequestHref ? `<div style="margin-top:14px; font-size:12px; color:#6B7280;">If the button doesn't work, use this link: <span style="word-break:break-all;">${openRequestHref}</span></div>` : ""}
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+
+            <tr>
+              <td style="padding:14px 6px 0 6px; text-align:center; font-family: Arial, sans-serif; font-size:11px; color:#6B7280;">
+                You received this email because you are subscribed to CRA request notifications.
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </div>
   `.trim();
 };
 
@@ -1168,6 +1338,8 @@ export const apiRouter = (() => {
                 actorName: body.createdByName ?? "",
                 comment: "",
                 link,
+                dashboardLink: buildDashboardLink(settings.appBaseUrl),
+                logoUrl: buildPublicAssetLink(settings.appBaseUrl, "monroc-logo.png"),
               });
               await pool
                 .request()
@@ -1255,6 +1427,8 @@ export const apiRouter = (() => {
                 actorName: body.userName ?? "",
                 comment: body.comment,
                 link,
+                dashboardLink: buildDashboardLink(settings.appBaseUrl),
+                logoUrl: buildPublicAssetLink(settings.appBaseUrl, "monroc-logo.png"),
               });
               await pool
                 .request()
