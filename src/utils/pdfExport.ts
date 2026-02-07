@@ -14,16 +14,22 @@ const CHINESE_FONT_NAME = 'simhei';
 
 let chineseFontLoaded = false;
 
-const arrayBufferToBase64 = (buffer: ArrayBuffer) => {
-  let binary = '';
-  const bytes = new Uint8Array(buffer);
-  const chunkSize = 0x8000;
-  for (let i = 0; i < bytes.length; i += chunkSize) {
-    const chunk = bytes.subarray(i, i + chunkSize);
-    binary += String.fromCharCode(...chunk);
-  }
-  return btoa(binary);
-};
+const arrayBufferToBase64 = (buffer: ArrayBuffer) =>
+  new Promise<string>((resolve, reject) => {
+    // Avoid huge String.fromCharCode spreads and btoa() limits for large TTFs.
+    const reader = new FileReader();
+    reader.onerror = () => reject(reader.error ?? new Error('Failed to read font'));
+    reader.onload = () => {
+      const result = String(reader.result || '');
+      const comma = result.indexOf(',');
+      if (!result.startsWith('data:') || comma === -1) {
+        reject(new Error('Unexpected font data URL'));
+        return;
+      }
+      resolve(result.slice(comma + 1));
+    };
+    reader.readAsDataURL(new Blob([buffer], { type: 'font/ttf' }));
+  });
 
 const loadChineseFont = async (pdf: jsPDF) => {
   if (chineseFontLoaded) return true;
@@ -33,7 +39,7 @@ const loadChineseFont = async (pdf: jsPDF) => {
       return false;
     }
     const fontData = await response.arrayBuffer();
-    const fontBase64 = arrayBufferToBase64(fontData);
+    const fontBase64 = await arrayBufferToBase64(fontData);
     pdf.addFileToVFS('simhei.ttf', fontBase64);
     pdf.addFont('simhei.ttf', CHINESE_FONT_NAME, 'normal');
     chineseFontLoaded = true;
@@ -224,13 +230,14 @@ export const generateRequestPDF = async (request: CustomerRequest, languageOverr
   const gutter = 10;
   const colWidth = (contentWidth - gutter) / 2;
   const labelWidth = 48;
-  const lineHeight = 4.5;
   const bottomMargin = 18;
   let y = margin;
   const labelFontSize = 9;
   const valueFontSize = 10;
   const sectionTitleSize = 14;
   const subsectionTitleSize = 11;
+  const ptToMm = (pt: number) => (pt * 25.4) / 72;
+  const lineHeightMm = (fontSizePt: number) => ptToMm(fontSizePt) * pdf.getLineHeightFactor();
 
   const ensureSpace = (height: number) => {
     if (y + height > pageHeight - bottomMargin) {
@@ -272,15 +279,19 @@ export const generateRequestPDF = async (request: CustomerRequest, languageOverr
       return null;
     }
     pdf.setFontSize(labelFontSize);
+    setFont('bold');
     const labelTextWidth = pdf.getTextWidth(label);
+    setFont('normal');
     const valueX = x + Math.max(labelWidth, labelTextWidth + 4);
     const availableValueWidth = Math.max(16, availableWidth - (valueX - x));
-    const valueLines = pdf.splitTextToSize(displayValue, availableValueWidth);
+    pdf.setFontSize(valueFontSize);
+    const valueLines = pdf.splitTextToSize(displayValue, availableValueWidth) as string[];
     return {
       displayValue,
       labelTextWidth,
       valueX,
       availableValueWidth,
+      valueLines,
       lineCount: Math.max(valueLines.length, 1),
     };
   };
@@ -305,7 +316,7 @@ export const generateRequestPDF = async (request: CustomerRequest, languageOverr
     pdf.setFontSize(valueFontSize);
     setFont('normal');
     pdf.setTextColor(0, 0, 0);
-    pdf.text(pdf.splitTextToSize(measure.displayValue, measure.availableValueWidth), measure.valueX, yPos);
+    pdf.text(measure.valueLines, measure.valueX, yPos);
     return measure.lineCount;
   };
 
@@ -328,7 +339,7 @@ export const generateRequestPDF = async (request: CustomerRequest, languageOverr
         continue;
       }
       const rowLines = Math.max(leftLines, rightLines);
-      const rowHeight = rowLines * lineHeight + rowGap;
+      const rowHeight = rowLines * lineHeightMm(valueFontSize) + rowGap;
       ensureSpace(rowHeight);
       if (left && leftValue) {
         drawInlineField(left.label, left.value, margin, y, colWidth);
@@ -345,19 +356,20 @@ export const generateRequestPDF = async (request: CustomerRequest, languageOverr
     if (!displayValue) return;
     const measure = measureInlineField(label, displayValue, margin, contentWidth);
     const lineCount = measure ? measure.lineCount : 1;
-    const rowHeight = lineCount * lineHeight + 0.5;
+    const rowHeight = lineCount * lineHeightMm(valueFontSize) + 0.5;
     ensureSpace(rowHeight);
     drawInlineField(label, displayValue, margin, y, contentWidth);
     y += rowHeight;
   };
 
   const drawParagraph = (text: string) => {
-    const lines = pdf.splitTextToSize(text, contentWidth);
-    ensureSpace(lines.length * lineHeight + 4);
     pdf.setFontSize(10);
+    setFont('normal');
+    const lines = pdf.splitTextToSize(text, contentWidth);
+    ensureSpace(lines.length * lineHeightMm(10) + 4);
     pdf.setTextColor(0, 0, 0);
     pdf.text(lines, margin, y);
-    y += lines.length * lineHeight + 4;
+    y += lines.length * lineHeightMm(10) + 4;
   };
 
   setFont('normal');
@@ -662,11 +674,12 @@ export const generateRequestPDF = async (request: CustomerRequest, languageOverr
       const statusLabel = t.statuses[entry.status as keyof typeof t.statuses] || STATUS_CONFIG[entry.status]?.label || entry.status;
       const timestamp = formatDate(new Date(entry.timestamp), 'MMM d, yyyy HH:mm');
       const commentText = entry.comment ? entry.comment : t.pdf.notProvided;
-      const commentLines = pdf.splitTextToSize(commentText, commentCol - 4);
-      const rowLines = Math.max(1, commentLines.length);
-      const rowHeight = rowLines * lineHeight + 2;
-      ensureSpace(rowHeight);
       pdf.setFontSize(9);
+      setFont('normal');
+      const commentLines = pdf.splitTextToSize(commentText, commentCol - 4) as string[];
+      const rowLines = Math.max(1, commentLines.length);
+      const rowHeight = rowLines * lineHeightMm(9) + 2;
+      ensureSpace(rowHeight);
       pdf.setTextColor(0, 0, 0);
       pdf.text(statusLabel, margin + 2, y);
       pdf.text(timestamp, margin + statusCol + 2, y);
