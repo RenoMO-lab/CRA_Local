@@ -137,16 +137,18 @@ const resolveRecipientsForStatus = (settings, status) => {
 const statusBadgeStyles = (status) => {
   const s = String(status ?? "");
   if (["clarification_needed", "gm_rejected"].includes(s)) {
-    return { bg: "#FEE2E2", text: "#991B1B", border: "#FCA5A5" };
+    // Solid badge (better contrast in Outlook dark mode).
+    return { bg: "#991B1B", text: "#FFFFFF", border: "#991B1B" };
   }
   if (["gm_approved", "costing_complete", "feasibility_confirmed", "closed"].includes(s)) {
-    return { bg: "#DCFCE7", text: "#166534", border: "#86EFAC" };
+    // Solid badge (better contrast in Outlook dark mode).
+    return { bg: "#166534", text: "#FFFFFF", border: "#166534" };
   }
   if (["submitted", "under_review", "in_costing", "gm_approval_pending", "sales_followup"].includes(s)) {
     // Solid badge (better contrast in Outlook dark mode).
     return { bg: "#1E40AF", text: "#FFFFFF", border: "#1E40AF" };
   }
-  return { bg: "#E5E7EB", text: "#374151", border: "#D1D5DB" };
+  return { bg: "#374151", text: "#FFFFFF", border: "#374151" };
 };
 
 const DEFAULT_EMAIL_TEMPLATES = {
@@ -239,22 +241,16 @@ const renderStatusEmailHtml = ({ request, newStatus, actorName, comment, link, d
       <!--[if mso]>
       <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="${safeHref}" style="height:${height}px;v-text-anchor:middle;width:${width}px;" arcsize="18%" strokecolor="${border}" fillcolor="${fill}">
         <w:anchorlock/>
-        <center style="color:${color};font-family:Arial, sans-serif;font-size:14px;font-weight:700;mso-line-height-rule:exactly;">
-          ${safeText}
+        <center style="mso-line-height-rule:exactly;">
+      <![endif]-->
+      <a href="${safeHref}"
+        style="background-color:${fill}; border:1px solid ${border}; border-radius:8px; color:${color}; display:inline-block; font-family:Arial, sans-serif; font-size:14px; font-weight:700; line-height:${height}px; text-align:center; text-decoration:none; width:${width}px; -webkit-text-size-adjust:none; mso-padding-alt:0;">
+        <span style="color:${color}; text-decoration:none;">${safeText}</span>
+      </a>
+      <!--[if mso]>
         </center>
       </v:roundrect>
       <![endif]-->
-      <!--[if !mso]><!-- -->
-      <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="mso-hide:all;">
-        <tr>
-          <td bgcolor="${fill}" style="background:${fill}; border:1px solid ${border}; border-radius:8px; mso-padding-alt:12px 16px; text-align:center;">
-            <a href="${safeHref}" style="display:inline-block; font-family:Arial, sans-serif; font-size:14px; font-weight:700; line-height:20px; color:${color}; text-decoration:none; padding:12px 16px; border-radius:8px; -webkit-text-size-adjust:none;">
-              <span style="color:${color}; text-decoration:none;">${safeText}</span>
-            </a>
-          </td>
-        </tr>
-      </table>
-      <!--<![endif]-->
     `.trim();
   };
 
