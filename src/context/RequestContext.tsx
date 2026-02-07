@@ -101,6 +101,7 @@ const reviveRequest = (r: any): CustomerRequest => {
     updatedAt: r?.updatedAt ? new Date(r.updatedAt) : new Date(),
     expectedDesignReplyDate: r?.expectedDesignReplyDate ? new Date(r.expectedDesignReplyDate) : undefined,
     expectedDeliverySelections: Array.isArray(r?.expectedDeliverySelections) ? r.expectedDeliverySelections : [],
+    clientExpectedDeliveryDate: r?.clientExpectedDeliveryDate ?? '',
     attachments,
     designResultComments: r?.designResultComments ?? '',
     designResultAttachments: Array.isArray(r?.designResultAttachments)

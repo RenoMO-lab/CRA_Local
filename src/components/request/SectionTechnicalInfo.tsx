@@ -62,7 +62,7 @@ const SectionTechnicalInfo: React.FC<SectionTechnicalInfoProps> = ({
   idPrefix,
 }) => {
   const { t, translateOption } = useLanguage();
-  const ROC_STANDARD = 'As per ROC Standard';
+  const ROC_STANDARD = 'As Per ROC Standard';
   const rocStandardKey = ROC_STANDARD.toLowerCase();
   const rocStandardLabel = translateOption(ROC_STANDARD);
   const fieldId = (suffix: string) => (idPrefix ? `${idPrefix}-${suffix}` : suffix);

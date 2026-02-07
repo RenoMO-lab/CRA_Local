@@ -1,7 +1,7 @@
 IF NOT EXISTS (
   SELECT 1
   FROM dbo.admin_list_items
-  WHERE category = 'brakeTypes' AND value = 'As per ROC Standard'
+  WHERE category = 'brakeTypes' AND value = 'As Per ROC Standard'
 )
 BEGIN
   DECLARE @next_brake_types INT = (
@@ -11,13 +11,13 @@ BEGIN
   );
 
   INSERT INTO dbo.admin_list_items (id, category, value, sort_order)
-  VALUES ('brakeTypes-roc-standard', 'brakeTypes', 'As per ROC Standard', @next_brake_types);
+  VALUES ('brakeTypes-roc-standard', 'brakeTypes', 'As Per ROC Standard', @next_brake_types);
 END;
 
 IF NOT EXISTS (
   SELECT 1
   FROM dbo.admin_list_items
-  WHERE category = 'mainBodySectionTypes' AND value = 'As per ROC Standard'
+  WHERE category = 'mainBodySectionTypes' AND value = 'As Per ROC Standard'
 )
 BEGIN
   DECLARE @next_main_body INT = (
@@ -27,13 +27,13 @@ BEGIN
   );
 
   INSERT INTO dbo.admin_list_items (id, category, value, sort_order)
-  VALUES ('mainBodySectionTypes-roc-standard', 'mainBodySectionTypes', 'As per ROC Standard', @next_main_body);
+  VALUES ('mainBodySectionTypes-roc-standard', 'mainBodySectionTypes', 'As Per ROC Standard', @next_main_body);
 END;
 
 IF NOT EXISTS (
   SELECT 1
   FROM dbo.admin_list_items
-  WHERE category = 'clientSealingRequests' AND value = 'As per ROC Standard'
+  WHERE category = 'clientSealingRequests' AND value = 'As Per ROC Standard'
 )
 BEGIN
   DECLARE @next_client_seal INT = (
@@ -43,13 +43,13 @@ BEGIN
   );
 
   INSERT INTO dbo.admin_list_items (id, category, value, sort_order)
-  VALUES ('clientSealingRequests-roc-standard', 'clientSealingRequests', 'As per ROC Standard', @next_client_seal);
+  VALUES ('clientSealingRequests-roc-standard', 'clientSealingRequests', 'As Per ROC Standard', @next_client_seal);
 END;
 
 IF NOT EXISTS (
   SELECT 1
   FROM dbo.admin_list_items
-  WHERE category = 'cupLogoOptions' AND value = 'As per ROC Standard'
+  WHERE category = 'cupLogoOptions' AND value = 'As Per ROC Standard'
 )
 BEGIN
   DECLARE @next_cup_logo INT = (
@@ -59,13 +59,13 @@ BEGIN
   );
 
   INSERT INTO dbo.admin_list_items (id, category, value, sort_order)
-  VALUES ('cupLogoOptions-roc-standard', 'cupLogoOptions', 'As per ROC Standard', @next_cup_logo);
+  VALUES ('cupLogoOptions-roc-standard', 'cupLogoOptions', 'As Per ROC Standard', @next_cup_logo);
 END;
 
 IF NOT EXISTS (
   SELECT 1
   FROM dbo.admin_list_items
-  WHERE category = 'suspensions' AND value = 'As per ROC Standard'
+  WHERE category = 'suspensions' AND value = 'As Per ROC Standard'
 )
 BEGIN
   DECLARE @next_suspensions INT = (
@@ -75,5 +75,5 @@ BEGIN
   );
 
   INSERT INTO dbo.admin_list_items (id, category, value, sort_order)
-  VALUES ('suspensions-roc-standard', 'suspensions', 'As per ROC Standard', @next_suspensions);
+  VALUES ('suspensions-roc-standard', 'suspensions', 'As Per ROC Standard', @next_suspensions);
 END;

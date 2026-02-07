@@ -437,6 +437,10 @@ export const generateRequestPDF = async (request: CustomerRequest, languageOverr
       ? request.expectedDeliverySelections.map(translateOption).join('; ')
       : undefined
   );
+  drawFieldLine(
+    t.request.clientExpectedDeliveryDate,
+    request.clientExpectedDeliveryDate || undefined
+  );
   y += 6;
 
   // Client Application Section

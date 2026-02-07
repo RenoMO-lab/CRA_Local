@@ -200,6 +200,7 @@ const normalizeRequestData = (data, nowIso) => {
     salesFeedbackComment: typeof data.salesFeedbackComment === "string" ? data.salesFeedbackComment : "",
     salesAttachments,
     products,
+    clientExpectedDeliveryDate: typeof data.clientExpectedDeliveryDate === "string" ? data.clientExpectedDeliveryDate : "",
     createdAt: data.createdAt ?? nowIso,
     updatedAt: data.updatedAt ?? nowIso,
   };

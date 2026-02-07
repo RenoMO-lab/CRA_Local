@@ -16,7 +16,7 @@ export type RequestStatus =
   | 'gm_rejected'
   | 'closed';
 
-export type BrakeType = 'drum' | 'disk' | 'na' | 'As per ROC Standard';
+export type BrakeType = 'drum' | 'disk' | 'na' | 'As Per ROC Standard';
 
 export type StudsPcdMode = 'standard' | 'special';
 
@@ -102,6 +102,7 @@ export interface CustomerRequest {
   expectedQty: number | null;
   repeatability: string;
   expectedDeliverySelections: string[];
+  clientExpectedDeliveryDate?: string;
 
   // Client Application
   workingCondition: string;
@@ -212,7 +213,7 @@ export const STANDARD_STUDS_PCD_OPTIONS: StandardStudsPcdOption[] = [
   { id: 'STD_6_M18_160_205', label: '6 × M18×1.5 — PCD 160/205', description: '6 studs M18x1.5' },
   { id: 'STD_8_M18_220_275', label: '8 × M18×1.5 — PCD 220/275', description: '8 studs M18x1.5' },
   { id: 'STD_10_M22_280_330', label: '10 × M22×1.5 — PCD 280/330', description: '10 studs M22x1.5' },
-  { id: 'STD_ROC_STANDARD', label: 'As per ROC Standard', description: 'As per ROC Standard' },
+  { id: 'STD_ROC_STANDARD', label: 'As Per ROC Standard', description: 'As Per ROC Standard' },
 ];
 
 export const AXLE_LOCATIONS: { value: AxleLocation; label: string }[] = [

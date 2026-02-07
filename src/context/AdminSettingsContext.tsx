@@ -70,7 +70,7 @@ const DEFAULT_DATA = {
     { id: '1', value: 'Drum' },
     { id: '2', value: 'Disk' },
     { id: '3', value: 'N/A' },
-    { id: '4', value: 'As per ROC Standard' },
+    { id: '4', value: 'As Per ROC Standard' },
   ],
   brakeSizes: [
     { id: '1', value: '180x32' },
@@ -91,18 +91,18 @@ const DEFAULT_DATA = {
     { id: '1', value: 'Round' },
     { id: '2', value: 'Square' },
     { id: '3', value: 'Tube' },
-    { id: '4', value: 'As per ROC Standard' },
+    { id: '4', value: 'As Per ROC Standard' },
   ],
   clientSealingRequests: [
     { id: '1', value: 'Steel' },
     { id: '2', value: 'Rubber' },
     { id: '3', value: 'N/A' },
-    { id: '4', value: 'As per ROC Standard' },
+    { id: '4', value: 'As Per ROC Standard' },
   ],
   cupLogoOptions: [
     { id: '1', value: 'Keep' },
     { id: '2', value: 'Remove' },
-    { id: '3', value: 'As per ROC Standard' },
+    { id: '3', value: 'As Per ROC Standard' },
   ],
   suspensions: [
     { id: '1', value: 'Air suspension' },
@@ -111,7 +111,7 @@ const DEFAULT_DATA = {
     { id: '4', value: 'PS-ROC' },
     { id: '5', value: 'V-ROC' },
     { id: '6', value: 'N/A' },
-    { id: '7', value: 'As per ROC Standard' },
+    { id: '7', value: 'As Per ROC Standard' },
   ],
   repeatabilityTypes: [
     { id: '1', value: 'One-off Prototype' },

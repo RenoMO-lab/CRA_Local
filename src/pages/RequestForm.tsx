@@ -25,7 +25,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 
 type FormStep = 'chapters' | 'product' | 'review';
 
-const ROC_STANDARD = 'As per ROC Standard';
+const ROC_STANDARD = 'As Per ROC Standard';
 const ROC_STANDARD_KEY = ROC_STANDARD.toLowerCase();
 
 const isRocStandardValue = (value: unknown) =>
@@ -138,6 +138,7 @@ const getInitialFormData = (): Partial<CustomerRequest> => ({
   city: '',
   repeatability: '',
   expectedDeliverySelections: [],
+  clientExpectedDeliveryDate: '',
   workingCondition: '',
   workingConditionOther: '',
   usageType: '',
@@ -575,6 +576,9 @@ const RequestForm: React.FC = () => {
     }
     if (!formData.expectedDeliverySelections?.length) {
       newErrors.expectedDeliverySelections = t.request.expectedDelivery + ' ' + t.common.required.toLowerCase();
+    }
+    if (!formData.clientExpectedDeliveryDate?.trim()) {
+      newErrors.clientExpectedDeliveryDate = t.request.clientExpectedDeliveryDate + ' ' + t.common.required.toLowerCase();
     }
     if (!formData.workingCondition) {
       newErrors.workingCondition = t.request.workingCondition + ' ' + t.common.required.toLowerCase();

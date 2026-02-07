@@ -1,5 +1,6 @@
 import React from 'react';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { CustomerRequest } from '@/types';
 import { useLanguage } from '@/context/LanguageContext';
@@ -74,6 +75,23 @@ const SectionExpectedDelivery: React.FC<SectionExpectedDeliveryProps> = ({
 
         {errors.expectedDeliverySelections && (
           <p className="text-xs text-destructive">{errors.expectedDeliverySelections}</p>
+        )}
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="clientExpectedDeliveryDate" className="text-sm font-medium">
+          {t.request.clientExpectedDeliveryDate} <span className="text-destructive">*</span>
+        </Label>
+        <Input
+          id="clientExpectedDeliveryDate"
+          type="date"
+          value={formData.clientExpectedDeliveryDate ?? ''}
+          onChange={(e) => onChange('clientExpectedDeliveryDate', e.target.value)}
+          disabled={isReadOnly}
+          className={errors.clientExpectedDeliveryDate ? 'border-destructive' : ''}
+        />
+        {errors.clientExpectedDeliveryDate && (
+          <p className="text-xs text-destructive">{errors.clientExpectedDeliveryDate}</p>
         )}
       </div>
     </div>
