@@ -1340,24 +1340,32 @@ const Settings: React.FC = () => {
         </TabsContent>
 
         <TabsContent value="m365" className="space-y-6">
-          <div className="bg-card rounded-lg border border-border p-4 md:p-6">
-            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div className="bg-card rounded-lg border border-border overflow-visible">
+            <div className="sticky top-0 z-10 bg-card/90 backdrop-blur border-b border-border px-4 md:px-6 py-4">
+              <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
               <div className="space-y-1">
                 <h3 className="text-lg font-semibold text-foreground">{t.settings.m365Title}</h3>
                 <p className="text-sm text-muted-foreground">{t.settings.m365Description}</p>
               </div>
-              <Button variant="outline" onClick={loadM365Info} disabled={isM365Loading}>
-                <RefreshCw size={16} className="mr-2" />
-                {isM365Loading ? t.common.loading : t.feedback.refresh}
-              </Button>
+                <div className="flex flex-wrap gap-3">
+                  <Button onClick={saveM365Settings} disabled={hasM365Error || isM365Loading}>
+                    {t.settings.saveChanges}
+                  </Button>
+                  <Button variant="outline" onClick={loadM365Info} disabled={isM365Loading}>
+                    <RefreshCw size={16} className="mr-2" />
+                    {isM365Loading ? t.common.loading : t.feedback.refresh}
+                  </Button>
+                </div>
+            </div>
             </div>
 
-            {hasM365Error ? (
-              <p className="mt-4 text-sm text-destructive">{t.settings.m365LoadError}</p>
-            ) : (
-              <div className="mt-6 space-y-6">
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  <div className="space-y-4">
+            <div className="p-4 md:p-6">
+              {hasM365Error ? (
+                <p className="text-sm text-destructive">{t.settings.m365LoadError}</p>
+              ) : (
+                <div className="space-y-6">
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                  <div className="lg:col-span-4 space-y-4">
                     <div className="flex items-center justify-between rounded-lg border border-border bg-muted/20 p-3">
                       <div className="space-y-0.5">
                         <div className="text-sm font-medium text-foreground">{t.settings.m365Enabled}</div>
@@ -1473,22 +1481,17 @@ const Settings: React.FC = () => {
                       />
                     </div>
 
-                    <div className="flex gap-3">
-                      <Button onClick={saveM365Settings}>{t.settings.saveChanges}</Button>
-                      <Button variant="outline" onClick={loadM365Info}>
-                        {t.feedback.refresh}
-                      </Button>
-                    </div>
                   </div>
 
-                  <div className="space-y-4">
+                  <div className="lg:col-span-8 space-y-4">
                     <div className="rounded-lg border border-border bg-muted/10 p-4 space-y-4">
                       <div className="text-sm font-semibold text-foreground">{t.settings.m365RecipientsTitle}</div>
-                      <div className="grid grid-cols-1 gap-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-2">
                           <Label htmlFor="m365-rec-sales">{t.settings.m365RecipientsSales}</Label>
                           <Textarea
                             id="m365-rec-sales"
+                            className="min-h-[96px]"
                             value={(m365Info?.settings ?? defaultM365Settings).recipientsSales}
                             onChange={(e) =>
                               setM365Info((prev) => ({
@@ -1504,6 +1507,7 @@ const Settings: React.FC = () => {
                           <Label htmlFor="m365-rec-design">{t.settings.m365RecipientsDesign}</Label>
                           <Textarea
                             id="m365-rec-design"
+                            className="min-h-[96px]"
                             value={(m365Info?.settings ?? defaultM365Settings).recipientsDesign}
                             onChange={(e) =>
                               setM365Info((prev) => ({
@@ -1519,6 +1523,7 @@ const Settings: React.FC = () => {
                           <Label htmlFor="m365-rec-costing">{t.settings.m365RecipientsCosting}</Label>
                           <Textarea
                             id="m365-rec-costing"
+                            className="min-h-[96px]"
                             value={(m365Info?.settings ?? defaultM365Settings).recipientsCosting}
                             onChange={(e) =>
                               setM365Info((prev) => ({
@@ -1534,6 +1539,7 @@ const Settings: React.FC = () => {
                           <Label htmlFor="m365-rec-admin">{t.settings.m365RecipientsAdmin}</Label>
                           <Textarea
                             id="m365-rec-admin"
+                            className="min-h-[96px]"
                             value={(m365Info?.settings ?? defaultM365Settings).recipientsAdmin}
                             onChange={(e) =>
                               setM365Info((prev) => ({
@@ -1547,64 +1553,68 @@ const Settings: React.FC = () => {
                         </div>
                       </div>
                     </div>
+                  </div>
+                </div>
 
-                    <div className="rounded-lg border border-border bg-muted/10 p-4 space-y-4">
-                      <div className="space-y-1">
-                        <div className="text-sm font-semibold text-foreground">{t.settings.m365FlowTitle}</div>
-                        <div className="text-xs text-muted-foreground">{t.settings.m365FlowDesc}</div>
-                      </div>
-                      <div className="overflow-auto">
-                        <Table>
-                          <TableHeader>
-                            <TableRow className="bg-muted/50 hover:bg-muted/50">
-                              <TableHead className="font-semibold">{t.settings.m365FlowStatus}</TableHead>
-                              <TableHead className="font-semibold">{t.settings.m365FlowSales}</TableHead>
-                              <TableHead className="font-semibold">{t.settings.m365FlowDesign}</TableHead>
-                              <TableHead className="font-semibold">{t.settings.m365FlowCosting}</TableHead>
-                              <TableHead className="font-semibold">{t.settings.m365FlowAdmin}</TableHead>
-                            </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            {FLOW_STATUS_KEYS.map((status) => (
-                              <TableRow key={status}>
-                                <TableCell className="font-medium">{getStatusLabel(status)}</TableCell>
-                                <TableCell>
-                                  <Checkbox
-                                    checked={getFlowValue(status, 'sales')}
-                                    onCheckedChange={(checked) => updateFlowValue(status, 'sales', Boolean(checked))}
-                                  />
-                                </TableCell>
-                                <TableCell>
-                                  <Checkbox
-                                    checked={getFlowValue(status, 'design')}
-                                    onCheckedChange={(checked) => updateFlowValue(status, 'design', Boolean(checked))}
-                                  />
-                                </TableCell>
-                                <TableCell>
-                                  <Checkbox
-                                    checked={getFlowValue(status, 'costing')}
-                                    onCheckedChange={(checked) => updateFlowValue(status, 'costing', Boolean(checked))}
-                                  />
-                                </TableCell>
-                                <TableCell>
-                                  <Checkbox
-                                    checked={getFlowValue(status, 'admin')}
-                                    onCheckedChange={(checked) => updateFlowValue(status, 'admin', Boolean(checked))}
-                                  />
-                                </TableCell>
-                              </TableRow>
-                            ))}
-                          </TableBody>
-                        </Table>
-                      </div>
-                    </div>
+                <div className="rounded-lg border border-border bg-muted/10 p-4 space-y-4">
+                  <div className="space-y-1">
+                    <div className="text-sm font-semibold text-foreground">{t.settings.m365FlowTitle}</div>
+                    <div className="text-xs text-muted-foreground">{t.settings.m365FlowDesc}</div>
+                  </div>
+                  <div className="overflow-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="bg-muted/50 hover:bg-muted/50">
+                          <TableHead className="font-semibold">{t.settings.m365FlowStatus}</TableHead>
+                          <TableHead className="font-semibold">{t.settings.m365FlowSales}</TableHead>
+                          <TableHead className="font-semibold">{t.settings.m365FlowDesign}</TableHead>
+                          <TableHead className="font-semibold">{t.settings.m365FlowCosting}</TableHead>
+                          <TableHead className="font-semibold">{t.settings.m365FlowAdmin}</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {FLOW_STATUS_KEYS.map((status) => (
+                          <TableRow key={status}>
+                            <TableCell className="font-medium">{getStatusLabel(status)}</TableCell>
+                            <TableCell>
+                              <Checkbox
+                                checked={getFlowValue(status, 'sales')}
+                                onCheckedChange={(checked) => updateFlowValue(status, 'sales', Boolean(checked))}
+                              />
+                            </TableCell>
+                            <TableCell>
+                              <Checkbox
+                                checked={getFlowValue(status, 'design')}
+                                onCheckedChange={(checked) => updateFlowValue(status, 'design', Boolean(checked))}
+                              />
+                            </TableCell>
+                            <TableCell>
+                              <Checkbox
+                                checked={getFlowValue(status, 'costing')}
+                                onCheckedChange={(checked) => updateFlowValue(status, 'costing', Boolean(checked))}
+                              />
+                            </TableCell>
+                            <TableCell>
+                              <Checkbox
+                                checked={getFlowValue(status, 'admin')}
+                                onCheckedChange={(checked) => updateFlowValue(status, 'admin', Boolean(checked))}
+                              />
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </div>
 
-                    <div className="rounded-lg border border-border bg-muted/10 p-4 space-y-4">
-                      <div className="space-y-1">
-                        <div className="text-sm font-semibold text-foreground">{t.settings.m365TemplatesTitle}</div>
-                        <div className="text-xs text-muted-foreground">{t.settings.m365TemplatesDesc}</div>
-                      </div>
+                <div className="rounded-lg border border-border bg-muted/10 p-4 space-y-4">
+                  <div className="space-y-1">
+                    <div className="text-sm font-semibold text-foreground">{t.settings.m365TemplatesTitle}</div>
+                    <div className="text-xs text-muted-foreground">{t.settings.m365TemplatesDesc}</div>
+                  </div>
 
+                  <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 items-start">
+                    <div className="space-y-4">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-2">
                           <Label>{t.settings.m365TemplateAction}</Label>
@@ -1701,25 +1711,29 @@ const Settings: React.FC = () => {
                         <Button variant="outline" onClick={previewM365Template} disabled={isM365PreviewLoading}>
                           {isM365PreviewLoading ? t.common.loading : t.settings.m365TemplatePreview}
                         </Button>
-                        <Button onClick={saveM365Settings}>{t.settings.saveChanges}</Button>
                         <span className="text-xs text-muted-foreground">{t.settings.m365TemplateSaveHint}</span>
                       </div>
-
-                      {m365PreviewHtml ? (
-                        <div className="rounded-lg border border-border bg-background overflow-hidden">
-                          <div className="p-3 border-b border-border">
-                            <div className="text-xs text-muted-foreground">{t.settings.m365TemplateSubjectPreview}</div>
-                            <div className="text-sm font-medium text-foreground break-words">{m365PreviewSubject || '-'}</div>
-                          </div>
-                          <iframe
-                            title="email-preview"
-                            style={{ width: '100%', height: 520, border: '0' }}
-                            srcDoc={m365PreviewHtml}
-                          />
-                        </div>
-                      ) : null}
                     </div>
 
+                    <div className="rounded-lg border border-border bg-background overflow-hidden">
+                      <div className="p-3 border-b border-border">
+                        <div className="text-xs text-muted-foreground">{t.settings.m365TemplateSubjectPreview}</div>
+                        <div className="text-sm font-medium text-foreground break-words">{m365PreviewSubject || '-'}</div>
+                        {!m365PreviewHtml ? (
+                          <div className="mt-1 text-xs text-muted-foreground">{t.settings.m365TemplatePreviewEmpty}</div>
+                        ) : null}
+                      </div>
+                      <iframe
+                        title="email-preview"
+                        style={{ width: '100%', height: 520, border: '0' }}
+                        srcDoc={m365PreviewHtml || '<div></div>'}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                  <div className="lg:col-span-6">
                     <div className="rounded-lg border border-border bg-muted/10 p-4 space-y-4">
                       <div className="flex items-start justify-between gap-3">
                         <div className="space-y-0.5">
@@ -1768,7 +1782,9 @@ const Settings: React.FC = () => {
                         </Button>
                       </div>
                     </div>
+                  </div>
 
+                  <div className="lg:col-span-6">
                     <div className="rounded-lg border border-border bg-muted/10 p-4 space-y-3">
                       <div className="text-sm font-semibold text-foreground">{t.settings.m365TestEmail}</div>
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
@@ -1796,6 +1812,7 @@ const Settings: React.FC = () => {
                 </div>
               </div>
             )}
+          </div>
           </div>
         </TabsContent>
 
