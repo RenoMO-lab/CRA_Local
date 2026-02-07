@@ -355,7 +355,6 @@ const renderStatusEmailHtml = ({ request, newStatus, actorName, comment, link, d
                       <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
                         ${kvRow("Request ID", rid)}
                         ${kvRow("Client", client)}
-                        ${kvRow("Contact", contact)}
                         ${kvRow("Country", country)}
                         ${kvRow("Application Vehicle", appVehicle)}
                         ${kvRow("Expected Qty", qtyText)}
