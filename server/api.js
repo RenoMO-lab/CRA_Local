@@ -208,12 +208,10 @@ const renderStatusEmailHtml = ({ request, newStatus, actorName, comment, link, d
   const titleText = String(template?.title ?? "Request Update").trim() || "Request Update";
   const introText = String(introOverride ?? template?.intro ?? "").trim();
   const primaryText = String(template?.primaryButtonText ?? "Open request").trim() || "Open request";
-  const secondaryText = String(template?.secondaryButtonText ?? "Open dashboard").trim() || "Open dashboard";
   const footerText = String(template?.footerText ?? "").trim();
 
   const badge = statusBadgeStyles(status);
   const openRequestHref = link ? escapeHtml(link) : "";
-  const openDashboardHref = dashboardLink ? escapeHtml(dashboardLink) : "";
   const safeLogoCid = String(logoCid ?? "").trim();
   const logoImg = safeLogoCid
     ? `<img src="cid:${escapeHtml(safeLogoCid)}" width="120" alt="MONROC" style="display:block; border:0; outline:none; text-decoration:none; height:auto;" />`
@@ -221,30 +219,24 @@ const renderStatusEmailHtml = ({ request, newStatus, actorName, comment, link, d
       ? `<img src="${escapeHtml(logoUrl)}" width="120" alt="MONROC" style="display:block; border:0; outline:none; text-decoration:none; height:auto;" />`
       : `<div style="font-weight:800; letter-spacing:0.5px; color:#111827;">MONROC</div>`;
 
-  const renderPrimaryButton = ({ href, text }) => {
+  const renderPrimaryButton = ({ href, text, widthPx = 420 }) => {
     const safeHref = String(href ?? "");
     const safeText = escapeHtml(text);
+    const width = Number.isFinite(widthPx) ? Math.max(280, Math.min(520, Math.floor(widthPx))) : 420;
 
     if (!safeHref) return "";
 
     return `
-      <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="border-collapse:separate;">
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="${width}" style="border-collapse:separate; width:${width}px; max-width:${width}px;">
         <tr>
-          <td align="left" valign="middle" bgcolor="#D71920" style="background:#D71920; border-radius:12px; mso-padding-alt:14px 18px;">
-            <a href="${safeHref}" style="display:inline-block; font-family:Arial, sans-serif; font-size:15px; font-weight:800; color:#FFFFFF; text-decoration:none; padding:14px 18px; line-height:20px; -webkit-text-size-adjust:none; border-radius:12px;">
+          <td align="center" valign="middle" bgcolor="#D71920" style="background:#D71920; border-radius:12px; mso-padding-alt:15px 18px;">
+            <a href="${safeHref}" style="display:block; font-family:Arial, sans-serif; font-size:15px; font-weight:800; color:#FFFFFF; text-decoration:none; padding:15px 18px; line-height:20px; -webkit-text-size-adjust:none; border-radius:12px; text-align:center;">
               <span style="color:#FFFFFF; text-decoration:none;">${safeText}</span>
             </a>
           </td>
         </tr>
       </table>
     `.trim();
-  };
-
-  const renderSecondaryLink = ({ href, text }) => {
-    const safeHref = String(href ?? "");
-    if (!safeHref) return "";
-    const label = escapeHtml(text);
-    return `<a href="${escapeHtml(safeHref)}" style="font-family:Arial, sans-serif; font-size:14px; font-weight:700; color:#2563EB; text-decoration:underline;">${label} &rarr;</a>`;
   };
 
   const kvCell = (label, value) => {
@@ -260,8 +252,7 @@ const renderStatusEmailHtml = ({ request, newStatus, actorName, comment, link, d
 
   const qtyText = typeof expectedQty === "number" ? String(expectedQty) : "";
 
-  const primaryBtn = renderPrimaryButton({ href: openRequestHref, text: primaryText });
-  const secondaryLink = renderSecondaryLink({ href: openDashboardHref, text: secondaryText || "Open dashboard" });
+  const primaryBtn = renderPrimaryButton({ href: openRequestHref, text: primaryText, widthPx: 440 });
 
   const accent = badge.accent;
   const metaParts = [];
@@ -369,15 +360,10 @@ const renderStatusEmailHtml = ({ request, newStatus, actorName, comment, link, d
                           <td style="padding:18px 24px 22px 24px;">
                             <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
                               <tr>
-                                <td align="left">
-                                  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="320" style="width:320px; max-width:320px;">
-                                    <tr><td>${primaryBtn}</td></tr>
-                                  </table>
-                                </td>
-                              </tr>
-                              <tr>
-                                <td style="padding-top:10px;">
-                                  ${secondaryLink ? `<div style="font-family:Arial, sans-serif;">${secondaryLink}</div>` : ""}
+                                <td align="center">
+                                  <div style="text-align:center;">
+                                    ${primaryBtn}
+                                  </div>
                                 </td>
                               </tr>
                             </table>

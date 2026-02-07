@@ -1602,13 +1602,6 @@ const Settings: React.FC = () => {
                             onChange={(e) => updateTemplateField(m365SelectedAction, 'primaryButtonText', e.target.value)}
                           />
                         </div>
-                        <div className="space-y-2">
-                          <Label>{t.settings.m365TemplateSecondary}</Label>
-                          <Input
-                            value={String(((m365Info?.settings?.templates as any) || DEFAULT_TEMPLATES)?.[m365SelectedAction]?.secondaryButtonText ?? '')}
-                            onChange={(e) => updateTemplateField(m365SelectedAction, 'secondaryButtonText', e.target.value)}
-                          />
-                        </div>
                       </div>
 
                       <div className="space-y-2">
