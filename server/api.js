@@ -143,7 +143,8 @@ const statusBadgeStyles = (status) => {
     return { bg: "#DCFCE7", text: "#166534", border: "#86EFAC" };
   }
   if (["submitted", "under_review", "in_costing", "gm_approval_pending", "sales_followup"].includes(s)) {
-    return { bg: "#DBEAFE", text: "#1E40AF", border: "#93C5FD" };
+    // Solid badge (better contrast in Outlook dark mode).
+    return { bg: "#1E40AF", text: "#FFFFFF", border: "#1E40AF" };
   }
   return { bg: "#E5E7EB", text: "#374151", border: "#D1D5DB" };
 };
@@ -222,8 +223,8 @@ const renderStatusEmailHtml = ({ request, newStatus, actorName, comment, link, d
 
   const clampBtnWidth = (text) => {
     const t = String(text ?? "");
-    const w = Math.floor(t.length * 8 + 64);
-    return Math.max(160, Math.min(280, w));
+    const w = Math.floor(t.length * 9 + 96);
+    return Math.max(180, Math.min(320, w));
   };
 
   const renderButton = ({ href, text, fill, color, border }) => {
@@ -238,15 +239,21 @@ const renderStatusEmailHtml = ({ request, newStatus, actorName, comment, link, d
       <!--[if mso]>
       <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="${safeHref}" style="height:${height}px;v-text-anchor:middle;width:${width}px;" arcsize="18%" strokecolor="${border}" fillcolor="${fill}">
         <w:anchorlock/>
-        <center style="color:${color};font-family:Arial, sans-serif;font-size:14px;font-weight:700;">
+        <center style="color:${color};font-family:Arial, sans-serif;font-size:14px;font-weight:700;mso-line-height-rule:exactly;">
           ${safeText}
         </center>
       </v:roundrect>
       <![endif]-->
       <!--[if !mso]><!-- -->
-      <a href="${safeHref}" style="background:${fill};border:1px solid ${border};border-radius:8px;color:${color};display:inline-block;font-family:Arial, sans-serif;font-size:14px;font-weight:700;line-height:${height}px;text-align:center;text-decoration:none;width:${width}px;-webkit-text-size-adjust:none;mso-hide:all;">
-        ${safeText}
-      </a>
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="mso-hide:all;">
+        <tr>
+          <td bgcolor="${fill}" style="background:${fill}; border:1px solid ${border}; border-radius:8px; mso-padding-alt:12px 16px; text-align:center;">
+            <a href="${safeHref}" style="display:inline-block; font-family:Arial, sans-serif; font-size:14px; font-weight:700; line-height:20px; color:${color}; text-decoration:none; padding:12px 16px; border-radius:8px; -webkit-text-size-adjust:none;">
+              <span style="color:${color}; text-decoration:none;">${safeText}</span>
+            </a>
+          </td>
+        </tr>
+      </table>
       <!--<![endif]-->
     `.trim();
   };
@@ -324,12 +331,14 @@ const renderStatusEmailHtml = ({ request, newStatus, actorName, comment, link, d
                     <td style="padding:20px 24px 10px 24px;">
                       <div style="font-size:18px; font-weight:700; color:#111827;">${escapeHtml(titleText)}</div>
                       ${introText ? `<div style="margin-top:6px; font-size:13px; color:#374151;">${escapeHtml(introText)}</div>` : ""}
-                      <div style="margin-top:6px;">
-                        <span style="display:inline-block; padding:6px 10px; border-radius:999px; background:${badge.bg}; color:${badge.text}; border:1px solid ${badge.border}; font-size:12px; font-weight:700;">
-                          ${escapeHtml(statusLabel)}
-                        </span>
-                        ${updatedAt ? `<span style="margin-left:10px; font-size:12px; color:#6B7280;">${escapeHtml(updatedAt)}</span>` : ""}
-                      </div>
+                      <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin-top:10px;">
+                        <tr>
+                          <td bgcolor="${badge.bg}" style="background:${badge.bg}; border:1px solid ${badge.border}; border-radius:999px; padding:6px 10px; mso-padding-alt:6px 10px; font-size:12px; font-weight:700; color:${badge.text}; mso-line-height-rule:exactly;">
+                            <span style="color:${badge.text}; text-decoration:none;">${escapeHtml(statusLabel)}</span>
+                          </td>
+                          ${updatedAt ? `<td style="padding-left:10px; font-size:12px; color:#6B7280; vertical-align:middle;">${escapeHtml(updatedAt)}</td>` : ""}
+                        </tr>
+                      </table>
                     </td>
                   </tr>
 
@@ -371,7 +380,7 @@ const renderStatusEmailHtml = ({ request, newStatus, actorName, comment, link, d
                         </tr>
                       </table>
 
-                      ${openRequestHref ? `<div style="margin-top:14px; font-size:12px; color:#6B7280;">If the button doesn't work, use this link: <span style="word-break:break-all;">${openRequestHref}</span></div>` : ""}
+                      ${openRequestHref ? `<div style="margin-top:14px; font-size:12px; color:#6B7280;">If the button doesn't work, use this link: <a href="${openRequestHref}" style="color:#2563EB; text-decoration:underline; word-break:break-all;">${openRequestHref}</a></div>` : ""}
                     </td>
                   </tr>
                 </table>
