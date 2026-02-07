@@ -34,9 +34,32 @@ if (Get-Command bun -ErrorAction SilentlyContinue) {
   npm run build
 }
 
-$nssm = Get-Command nssm -ErrorAction SilentlyContinue
-if ($nssm) {
-  nssm restart $ServiceName
-} else {
-  Write-Warning "NSSM not found. Restart the service manually."
+function Restart-AppService {
+  param(
+    [string]$Name
+  )
+
+  # Prefer NSSM if available (service is managed by it), but don't assume it's on PATH.
+  $nssmCmd = $null
+  try {
+    $nssmCmd = (Get-Command nssm -ErrorAction Stop).Source
+  } catch {
+    $nssmCmd = $null
+  }
+  if (-not $nssmCmd) {
+    $candidate = "C:\nssm\nssm.exe"
+    if (Test-Path $candidate) {
+      $nssmCmd = $candidate
+    }
+  }
+
+  if ($nssmCmd) {
+    & $nssmCmd restart $Name
+    return
+  }
+
+  # Fallback: normal Windows service restart.
+  Restart-Service -Name $Name -Force
 }
+
+Restart-AppService -Name $ServiceName
