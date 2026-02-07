@@ -7,7 +7,9 @@ import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
 import { getPool, sql } from "./db.js";
 import {
+  claimDeviceCodeSessionForRedeem,
   clearM365Tokens,
+  forceRefreshAccessToken,
   getLatestDeviceCodeSession,
   getM365Settings,
   getM365TokenState,
@@ -936,12 +938,25 @@ export const apiRouter = (() => {
         res.status(400).json({ error: "No device code session. Click \"Start device code\" first." });
         return;
       }
+      if (latest.status === "redeeming") {
+        // Another poll request is already in-flight; treat it as pending to avoid double-redeem errors.
+        res.json({ status: "pending" });
+        return;
+      }
       if (latest.status !== "pending") {
         res.status(400).json({ error: "This device code session is no longer pending. Click \"Start device code\" to generate a new code." });
         return;
       }
       if (latest.expiresAt && new Date(latest.expiresAt).getTime() <= Date.now()) {
         res.status(400).json({ error: "This device code has expired. Click \"Start device code\" to generate a new code." });
+        return;
+      }
+
+      // Acquire a DB-level "lock" for this session so only one caller redeems it at a time.
+      const claimed = await claimDeviceCodeSessionForRedeem(pool, { id: latest.id });
+      if (!claimed) {
+        const stateNow = await getM365TokenState(pool);
+        res.json({ status: stateNow.hasRefreshToken ? "connected" : "pending" });
         return;
       }
 
@@ -965,10 +980,16 @@ export const apiRouter = (() => {
 
       const err = result.json?.error;
       if (err === "authorization_pending") {
+        try {
+          await updateDeviceCodeSessionStatus(pool, { id: latest.id, status: "pending" });
+        } catch {}
         res.json({ status: "pending" });
         return;
       }
       if (err === "slow_down") {
+        try {
+          await updateDeviceCodeSessionStatus(pool, { id: latest.id, status: "pending" });
+        } catch {}
         res.json({ status: "slow_down" });
         return;
       }
@@ -982,6 +1003,16 @@ export const apiRouter = (() => {
 
       const desc = result.json?.error_description || "";
       if (err === "invalid_grant" && desc.toLowerCase().includes("already") && desc.toLowerCase().includes("redeem")) {
+        // Often indicates a double-poll (two tabs / rapid clicks). If another request already stored tokens,
+        // treat it as connected instead of surfacing a scary error.
+        const stateNow = await getM365TokenState(pool);
+        if (stateNow.hasRefreshToken) {
+          try {
+            await updateDeviceCodeSessionStatus(pool, { id: latest.id, status: "redeemed" });
+          } catch {}
+          res.json({ status: "connected" });
+          return;
+        }
         try {
           await updateDeviceCodeSessionStatus(pool, { id: latest.id, status: "redeemed" });
         } catch {}
@@ -989,10 +1020,42 @@ export const apiRouter = (() => {
         return;
       }
 
+      // Release the "redeeming" lock on unexpected errors so the user can try again.
+      try {
+        await updateDeviceCodeSessionStatus(pool, { id: latest.id, status: "pending" });
+      } catch {}
+
       res.status(400).json({
         status: "error",
         error: result.json?.error_description || result.json?.error || "Device code poll failed.",
       });
+    })
+  );
+
+  router.post(
+    "/admin/m365/check",
+    asyncHandler(async (req, res) => {
+      const pool = await getPool();
+      const state = await getM365TokenState(pool);
+      if (!state.hasRefreshToken) {
+        res.status(400).json({
+          status: "disconnected",
+          error: "Microsoft 365 is not connected. Click \"Start device code\" to connect.",
+        });
+        return;
+      }
+
+      try {
+        await forceRefreshAccessToken(pool);
+      } catch (error) {
+        res.status(400).json({
+          status: "error",
+          error: String(error?.message ?? error),
+        });
+        return;
+      }
+
+      res.json({ status: "connected" });
     })
   );
 

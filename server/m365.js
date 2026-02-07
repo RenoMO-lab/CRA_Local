@@ -251,6 +251,16 @@ export const updateDeviceCodeSessionStatus = async (pool, { id, status }) => {
     .query("UPDATE m365_device_code_sessions SET status=@status WHERE id=@id");
 };
 
+// Concurrency guard for device-code polling: only one request should attempt redemption at a time.
+// Returns the number of affected rows (1 if lock acquired, 0 otherwise).
+export const claimDeviceCodeSessionForRedeem = async (pool, { id }) => {
+  const result = await pool
+    .request()
+    .input("id", id)
+    .query("UPDATE m365_device_code_sessions SET status='redeeming' WHERE id=@id AND status='pending'");
+  return result?.rowsAffected?.[0] ?? 0;
+};
+
 export const refreshAccessToken = async ({ tenantId, clientId, refreshToken, scope }) => {
   ensureFetch();
   const tenant = getTenant(tenantId);
@@ -289,6 +299,29 @@ export const getValidAccessToken = async (pool) => {
     return accessToken;
   }
 
+  if (!refreshToken) {
+    throw new Error("Microsoft 365 is not connected (missing refresh token).");
+  }
+
+  const scope = "offline_access Mail.Send";
+  const refreshed = await refreshAccessToken({
+    tenantId: settings.tenantId,
+    clientId: settings.clientId,
+    refreshToken,
+    scope,
+  });
+  await storeTokenResponse(pool, refreshed);
+  return refreshed.access_token;
+};
+
+export const forceRefreshAccessToken = async (pool) => {
+  const settings = await getM365Settings(pool);
+  if (!settings.clientId) throw new Error("Missing Microsoft 365 client id.");
+  if (!settings.tenantId) throw new Error("Missing Microsoft 365 tenant id.");
+
+  const { recordset } = await pool.request().query("SELECT TOP 1 refresh_token FROM m365_mail_tokens WHERE id = 1");
+  const row = recordset[0] ?? {};
+  const refreshToken = row.refresh_token ?? null;
   if (!refreshToken) {
     throw new Error("Microsoft 365 is not connected (missing refresh token).");
   }

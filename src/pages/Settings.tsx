@@ -419,7 +419,9 @@ const Settings: React.FC = () => {
 
   const pollM365Connection = async () => {
     try {
-      const res = await fetch('/api/admin/m365/poll', { method: 'POST' });
+      const isConnected = Boolean(m365Info?.connection?.hasRefreshToken);
+      const url = isConnected ? '/api/admin/m365/check' : '/api/admin/m365/poll';
+      const res = await fetch(url, { method: 'POST' });
       const data = await res.json().catch(() => null);
       if (!res.ok) {
         const msg =
