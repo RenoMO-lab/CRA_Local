@@ -41,6 +41,11 @@ app.get("*", (req, res) => {
     res.status(404).json({ error: "Not found" });
     return;
   }
+  // For SPA deep-links (e.g. /settings), we serve index.html from this handler.
+  // Ensure browsers don't cache an old index.html that points at stale hashed assets.
+  res.setHeader("Cache-Control", "no-store, max-age=0");
+  res.setHeader("Pragma", "no-cache");
+  res.setHeader("Expires", "0");
   res.sendFile(path.join(distDir, "index.html"));
 });
 
