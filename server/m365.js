@@ -162,6 +162,9 @@ export const storeDeviceCodeSession = async (pool, dc) => {
   const expiresIn = Number.parseInt(String(dc?.expires_in ?? ""), 10);
   const expiresAt = Number.isFinite(expiresIn) ? new Date(Date.now() + expiresIn * 1000) : null;
 
+  // Avoid having multiple "pending" codes in the UI. Old ones become confusing fast.
+  await pool.request().query("UPDATE m365_device_code_sessions SET status='superseded' WHERE status='pending'");
+
   await pool
     .request()
     .input("device_code", dc.device_code)
@@ -220,16 +223,32 @@ export const storeTokenResponse = async (pool, tokenJson) => {
   const expiresIn = Number.parseInt(String(tokenJson?.expires_in ?? ""), 10);
   const expiresAt = Number.isFinite(expiresIn) ? new Date(Date.now() + expiresIn * 1000) : null;
 
+  // Some providers omit refresh_token on refresh; never wipe it in that case.
+  const refreshToken =
+    tokenJson && Object.prototype.hasOwnProperty.call(tokenJson, "refresh_token")
+      ? (tokenJson.refresh_token ?? null)
+      : undefined;
+
   await pool
     .request()
     .input("access_token", tokenJson?.access_token ?? null)
-    .input("refresh_token", tokenJson?.refresh_token ?? null)
+    .input("refresh_token", refreshToken ?? null)
     .input("expires_at", expiresAt)
     .input("scope", tokenJson?.scope ?? null)
     .input("token_type", tokenJson?.token_type ?? null)
     .query(
-      "UPDATE m365_mail_tokens SET access_token=@access_token, refresh_token=@refresh_token, expires_at=@expires_at, scope=@scope, token_type=@token_type, updated_at=SYSUTCDATETIME() WHERE id = 1"
+      "UPDATE m365_mail_tokens SET access_token=@access_token, refresh_token=COALESCE(@refresh_token, refresh_token), expires_at=@expires_at, scope=COALESCE(@scope, scope), token_type=COALESCE(@token_type, token_type), updated_at=SYSUTCDATETIME() WHERE id = 1"
     );
+};
+
+export const updateDeviceCodeSessionStatus = async (pool, { id, status }) => {
+  const next = String(status ?? "").trim();
+  if (!next) return;
+  await pool
+    .request()
+    .input("id", id)
+    .input("status", next)
+    .query("UPDATE m365_device_code_sessions SET status=@status WHERE id=@id");
 };
 
 export const refreshAccessToken = async ({ tenantId, clientId, refreshToken, scope }) => {

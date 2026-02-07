@@ -18,6 +18,7 @@ import {
   startDeviceCodeFlow,
   storeDeviceCodeSession,
   storeTokenResponse,
+  updateDeviceCodeSessionStatus,
   updateM365Settings,
 } from "./m365.js";
 
@@ -776,23 +777,32 @@ export const apiRouter = (() => {
         getM365TokenState(pool),
         getLatestDeviceCodeSession(pool),
       ]);
-        res.json({
-          settings,
-          connection: {
-            hasRefreshToken: tokenState.hasRefreshToken,
-            expiresAt: tokenState.expiresAt,
-          },
-        deviceCode: latestDc
-          ? {
-              userCode: latestDc.userCode,
-              verificationUri: latestDc.verificationUri,
-              verificationUriComplete: latestDc.verificationUriComplete,
-              message: latestDc.message,
-              expiresAt: latestDc.expiresAt,
-              status: latestDc.status,
-              createdAt: latestDc.createdAt,
-            }
-          : null,
+      const connected = Boolean(tokenState.hasRefreshToken);
+      const isPending =
+        latestDc &&
+        latestDc.status === "pending" &&
+        (!latestDc.expiresAt || new Date(latestDc.expiresAt).getTime() > Date.now());
+
+      res.json({
+        settings,
+        connection: {
+          hasRefreshToken: tokenState.hasRefreshToken,
+          expiresAt: tokenState.expiresAt,
+        },
+        // If we are already connected, hide old device codes from the UI.
+        deviceCode: connected
+          ? null
+          : isPending
+            ? {
+                userCode: latestDc.userCode,
+                verificationUri: latestDc.verificationUri,
+                verificationUriComplete: latestDc.verificationUriComplete,
+                message: latestDc.message,
+                expiresAt: latestDc.expiresAt,
+                status: latestDc.status,
+                createdAt: latestDc.createdAt,
+              }
+            : null,
       });
     })
   );
@@ -914,9 +924,24 @@ export const apiRouter = (() => {
         return;
       }
 
+      const tokenState = await getM365TokenState(pool);
+      if (tokenState.hasRefreshToken) {
+        // Already connected; never try to redeem an old device code again.
+        res.json({ status: "connected" });
+        return;
+      }
+
       const latest = await getLatestDeviceCodeSession(pool);
       if (!latest) {
-        res.status(400).json({ error: "No device code session" });
+        res.status(400).json({ error: "No device code session. Click \"Start device code\" first." });
+        return;
+      }
+      if (latest.status !== "pending") {
+        res.status(400).json({ error: "This device code session is no longer pending. Click \"Start device code\" to generate a new code." });
+        return;
+      }
+      if (latest.expiresAt && new Date(latest.expiresAt).getTime() <= Date.now()) {
+        res.status(400).json({ error: "This device code has expired. Click \"Start device code\" to generate a new code." });
         return;
       }
 
@@ -928,6 +953,12 @@ export const apiRouter = (() => {
 
       if (result.ok) {
         await storeTokenResponse(pool, result.json);
+        try {
+          await updateDeviceCodeSessionStatus(pool, { id: latest.id, status: "redeemed" });
+        } catch (e) {
+          // Non-fatal; just for UI hygiene.
+          console.warn("Failed to update device code session status:", e?.message ?? e);
+        }
         res.json({ status: "connected" });
         return;
       }
@@ -942,11 +973,26 @@ export const apiRouter = (() => {
         return;
       }
       if (err === "expired_token") {
+        try {
+          await updateDeviceCodeSessionStatus(pool, { id: latest.id, status: "expired" });
+        } catch {}
         res.json({ status: "expired" });
         return;
       }
 
-      res.status(400).json({ status: "error", error: result.json });
+      const desc = result.json?.error_description || "";
+      if (err === "invalid_grant" && desc.toLowerCase().includes("already") && desc.toLowerCase().includes("redeem")) {
+        try {
+          await updateDeviceCodeSessionStatus(pool, { id: latest.id, status: "redeemed" });
+        } catch {}
+        res.status(400).json({ status: "error", error: "This device code was already used. Click \"Start device code\" to generate a new code." });
+        return;
+      }
+
+      res.status(400).json({
+        status: "error",
+        error: result.json?.error_description || result.json?.error || "Device code poll failed.",
+      });
     })
   );
 

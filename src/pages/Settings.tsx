@@ -422,7 +422,12 @@ const Settings: React.FC = () => {
       const res = await fetch('/api/admin/m365/poll', { method: 'POST' });
       const data = await res.json().catch(() => null);
       if (!res.ok) {
-        const msg = data?.error ? JSON.stringify(data.error) : `Poll failed: ${res.status}`;
+        const msg =
+          typeof data?.error === 'string'
+            ? data.error
+            : data?.error
+              ? JSON.stringify(data.error)
+              : `Poll failed: ${res.status}`;
         throw new Error(msg);
       }
       setM365LastPollStatus(data?.status ?? null);
