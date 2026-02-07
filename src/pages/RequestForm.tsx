@@ -196,6 +196,7 @@ const RequestForm: React.FC = () => {
     existingRequest ? { ...existingRequest, products: normalizeProducts(existingRequest) } : getInitialFormData()
   );
   const [loadedRequestId, setLoadedRequestId] = useState<string | null>(null);
+  const [loadedRequestVersion, setLoadedRequestVersion] = useState<string | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -226,15 +227,27 @@ const RequestForm: React.FC = () => {
       if (loadedRequestId !== null) {
         setFormData(getInitialFormData());
         setLoadedRequestId(null);
+        setLoadedRequestVersion(null);
       }
       return;
     }
 
-    if (existingRequest.id !== loadedRequestId) {
+    const historyLen = Array.isArray((existingRequest as any).history) ? (existingRequest as any).history.length : 0;
+    const updatedAtKey = (existingRequest as any).updatedAt ? String((existingRequest as any).updatedAt) : "";
+    const versionKey = `${existingRequest.id}|${updatedAtKey}|h:${historyLen}`;
+
+    // First time load (or navigating to another request)
+    const isFirstLoadForId = existingRequest.id !== loadedRequestId;
+    // Dashboard polling gives us summaries (no history). When the full request arrives for the same id,
+    // we must refresh the form once, otherwise users only see data after reopening.
+    const isUpgradedInViewMode = isViewMode && loadedRequestVersion !== null && loadedRequestVersion !== versionKey;
+
+    if (isFirstLoadForId || isUpgradedInViewMode) {
       setFormData({ ...existingRequest, products: normalizeProducts(existingRequest) });
       setLoadedRequestId(existingRequest.id);
+      setLoadedRequestVersion(versionKey);
     }
-  }, [existingRequest, loadedRequestId]);
+  }, [existingRequest, loadedRequestId, loadedRequestVersion, isViewMode]);
 
   useEffect(() => {
     if (!existingRequest) {
