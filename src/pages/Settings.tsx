@@ -105,6 +105,7 @@ const Settings: React.FC = () => {
     addListItem,
     updateListItem,
     deleteListItem,
+    reorderListItems,
     users,
     setUsers,
   } = useAdminSettings();
@@ -498,6 +499,7 @@ const Settings: React.FC = () => {
               onAddItem={(value) => addListItem('applicationVehicles', value)}
               onDeleteItem={(id) => deleteListItem('applicationVehicles', id)}
               onEditItem={(listName, item) => openEditItemDialog('applicationVehicles', listName, item)}
+              onReorderItems={(ids) => reorderListItems('applicationVehicles', ids)}
               onToast={handleToast}
             />
             <ListManager
@@ -508,6 +510,7 @@ const Settings: React.FC = () => {
               onAddItem={(value) => addListItem('countries', value)}
               onDeleteItem={(id) => deleteListItem('countries', id)}
               onEditItem={(listName, item) => openEditItemDialog('countries', listName, item)}
+              onReorderItems={(ids) => reorderListItems('countries', ids)}
               onToast={handleToast}
             />
               <ListManager
@@ -518,6 +521,7 @@ const Settings: React.FC = () => {
                 onAddItem={(value) => addListItem('brakeSizes', value)}
                 onDeleteItem={(id) => deleteListItem('brakeSizes', id)}
                 onEditItem={(listName, item) => openEditItemDialog('brakeSizes', listName, item)}
+                onReorderItems={(ids) => reorderListItems('brakeSizes', ids)}
                 onToast={handleToast}
               />
               <ListManager
@@ -528,6 +532,7 @@ const Settings: React.FC = () => {
                 onAddItem={(value) => addListItem('brakeTypes', value)}
                 onDeleteItem={(id) => deleteListItem('brakeTypes', id)}
                 onEditItem={(listName, item) => openEditItemDialog('brakeTypes', listName, item)}
+                onReorderItems={(ids) => reorderListItems('brakeTypes', ids)}
                 onToast={handleToast}
               />
               <ListManager
@@ -538,6 +543,7 @@ const Settings: React.FC = () => {
                 onAddItem={(value) => addListItem('brakePowerTypes', value)}
                 onDeleteItem={(id) => deleteListItem('brakePowerTypes', id)}
                 onEditItem={(listName, item) => openEditItemDialog('brakePowerTypes', listName, item)}
+                onReorderItems={(ids) => reorderListItems('brakePowerTypes', ids)}
                 onToast={handleToast}
               />
               <ListManager
@@ -548,6 +554,7 @@ const Settings: React.FC = () => {
                 onAddItem={(value) => addListItem('brakeCertificates', value)}
                 onDeleteItem={(id) => deleteListItem('brakeCertificates', id)}
                 onEditItem={(listName, item) => openEditItemDialog('brakeCertificates', listName, item)}
+                onReorderItems={(ids) => reorderListItems('brakeCertificates', ids)}
                 onToast={handleToast}
               />
               <ListManager
@@ -558,6 +565,7 @@ const Settings: React.FC = () => {
                 onAddItem={(value) => addListItem('mainBodySectionTypes', value)}
                 onDeleteItem={(id) => deleteListItem('mainBodySectionTypes', id)}
                 onEditItem={(listName, item) => openEditItemDialog('mainBodySectionTypes', listName, item)}
+                onReorderItems={(ids) => reorderListItems('mainBodySectionTypes', ids)}
                 onToast={handleToast}
               />
               <ListManager
@@ -568,6 +576,7 @@ const Settings: React.FC = () => {
                 onAddItem={(value) => addListItem('clientSealingRequests', value)}
                 onDeleteItem={(id) => deleteListItem('clientSealingRequests', id)}
                 onEditItem={(listName, item) => openEditItemDialog('clientSealingRequests', listName, item)}
+                onReorderItems={(ids) => reorderListItems('clientSealingRequests', ids)}
                 onToast={handleToast}
               />
               <ListManager
@@ -578,6 +587,7 @@ const Settings: React.FC = () => {
                 onAddItem={(value) => addListItem('cupLogoOptions', value)}
                 onDeleteItem={(id) => deleteListItem('cupLogoOptions', id)}
                 onEditItem={(listName, item) => openEditItemDialog('cupLogoOptions', listName, item)}
+                onReorderItems={(ids) => reorderListItems('cupLogoOptions', ids)}
                 onToast={handleToast}
               />
               <ListManager
@@ -588,6 +598,7 @@ const Settings: React.FC = () => {
               onAddItem={(value) => addListItem('suspensions', value)}
               onDeleteItem={(id) => deleteListItem('suspensions', id)}
               onEditItem={(listName, item) => openEditItemDialog('suspensions', listName, item)}
+              onReorderItems={(ids) => reorderListItems('suspensions', ids)}
               onToast={handleToast}
             />
             <ListManager
@@ -598,6 +609,7 @@ const Settings: React.FC = () => {
               onAddItem={(value) => addListItem('repeatabilityTypes', value)}
               onDeleteItem={(id) => deleteListItem('repeatabilityTypes', id)}
               onEditItem={(listName, item) => openEditItemDialog('repeatabilityTypes', listName, item)}
+              onReorderItems={(ids) => reorderListItems('repeatabilityTypes', ids)}
               onToast={handleToast}
             />
             <ListManager
@@ -608,6 +620,7 @@ const Settings: React.FC = () => {
               onAddItem={(value) => addListItem('expectedDeliveryOptions', value)}
               onDeleteItem={(id) => deleteListItem('expectedDeliveryOptions', id)}
               onEditItem={(listName, item) => openEditItemDialog('expectedDeliveryOptions', listName, item)}
+              onReorderItems={(ids) => reorderListItems('expectedDeliveryOptions', ids)}
               onToast={handleToast}
             />
             <ListManager
@@ -618,6 +631,7 @@ const Settings: React.FC = () => {
               onAddItem={(value) => addListItem('workingConditions', value)}
               onDeleteItem={(id) => deleteListItem('workingConditions', id)}
               onEditItem={(listName, item) => openEditItemDialog('workingConditions', listName, item)}
+              onReorderItems={(ids) => reorderListItems('workingConditions', ids)}
               onToast={handleToast}
             />
             <ListManager
@@ -628,6 +642,7 @@ const Settings: React.FC = () => {
               onAddItem={(value) => addListItem('usageTypes', value)}
               onDeleteItem={(id) => deleteListItem('usageTypes', id)}
               onEditItem={(listName, item) => openEditItemDialog('usageTypes', listName, item)}
+              onReorderItems={(ids) => reorderListItems('usageTypes', ids)}
               onToast={handleToast}
             />
             <ListManager
@@ -638,6 +653,7 @@ const Settings: React.FC = () => {
               onAddItem={(value) => addListItem('environments', value)}
               onDeleteItem={(id) => deleteListItem('environments', id)}
               onEditItem={(listName, item) => openEditItemDialog('environments', listName, item)}
+              onReorderItems={(ids) => reorderListItems('environments', ids)}
               onToast={handleToast}
             />
           </div>
@@ -653,6 +669,7 @@ const Settings: React.FC = () => {
               onAddItem={(value) => addListItem('configurationTypes', value)}
               onDeleteItem={(id) => deleteListItem('configurationTypes', id)}
               onEditItem={(listName, item) => openEditItemDialog('configurationTypes', listName, item)}
+              onReorderItems={(ids) => reorderListItems('configurationTypes', ids)}
               onToast={handleToast}
             />
             <ListManager
@@ -663,6 +680,7 @@ const Settings: React.FC = () => {
               onAddItem={(value) => addListItem('axleLocations', value)}
               onDeleteItem={(id) => deleteListItem('axleLocations', id)}
               onEditItem={(listName, item) => openEditItemDialog('axleLocations', listName, item)}
+              onReorderItems={(ids) => reorderListItems('axleLocations', ids)}
               onToast={handleToast}
             />
             <ListManager
@@ -673,6 +691,7 @@ const Settings: React.FC = () => {
               onAddItem={(value) => addListItem('articulationTypes', value)}
               onDeleteItem={(id) => deleteListItem('articulationTypes', id)}
               onEditItem={(listName, item) => openEditItemDialog('articulationTypes', listName, item)}
+              onReorderItems={(ids) => reorderListItems('articulationTypes', ids)}
               onToast={handleToast}
             />
           </div>

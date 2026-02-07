@@ -495,6 +495,81 @@ export const apiRouter = (() => {
     })
   );
 
+  // Update the ordering for a list category (global, persisted).
+  // Accepts { orderedIds: string[] } and normalizes against current DB state.
+  // Route must be defined before "/admin/lists/:category/:itemId" to avoid collisions.
+  router.put(
+    "/admin/lists/:category/reorder",
+    asyncHandler(async (req, res) => {
+      const { category } = req.params;
+      if (!ADMIN_LIST_CATEGORIES.has(category)) {
+        res.status(404).json({ error: "Unknown list category" });
+        return;
+      }
+
+      const rawIds = Array.isArray(req.body?.orderedIds) ? req.body.orderedIds : [];
+      const orderedIds = [];
+      const seen = new Set();
+      for (const v of rawIds) {
+        const id = String(v ?? "").trim();
+        if (!id) continue;
+        if (seen.has(id)) continue;
+        seen.add(id);
+        orderedIds.push(id);
+      }
+
+      if (!orderedIds.length) {
+        res.status(400).json({ error: "Missing orderedIds" });
+        return;
+      }
+
+      const pool = await getPool();
+      const transaction = new sql.Transaction(pool);
+      await transaction.begin();
+      try {
+        const existing = await new sql.Request(transaction)
+          .input("category", sql.NVarChar(64), category)
+          .query(
+            "SELECT id FROM admin_list_items WHERE category = @category ORDER BY sort_order, value"
+          );
+
+        const existingIds = existing.recordset.map((r) => r.id);
+        const existingSet = new Set(existingIds);
+
+        // Keep only ids that currently exist for the category, then append any ids
+        // not provided by the client (e.g. if another admin added items concurrently).
+        const finalIds = [];
+        const finalSet = new Set();
+        for (const id of orderedIds) {
+          if (!existingSet.has(id)) continue;
+          finalIds.push(id);
+          finalSet.add(id);
+        }
+        for (const id of existingIds) {
+          if (finalSet.has(id)) continue;
+          finalIds.push(id);
+          finalSet.add(id);
+        }
+
+        for (let i = 0; i < finalIds.length; i++) {
+          await new sql.Request(transaction)
+            .input("id", sql.NVarChar(64), finalIds[i])
+            .input("category", sql.NVarChar(64), category)
+            .input("sort_order", sql.Int, i + 1)
+            .query(
+              "UPDATE admin_list_items SET sort_order = @sort_order WHERE id = @id AND category = @category"
+            );
+        }
+
+        await transaction.commit();
+        res.json({ ok: true });
+      } catch (error) {
+        await transaction.rollback();
+        throw error;
+      }
+    })
+  );
+
   router.put(
     "/admin/lists/:category/:itemId",
     asyncHandler(async (req, res) => {

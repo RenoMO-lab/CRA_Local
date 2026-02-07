@@ -37,6 +37,7 @@ interface AdminSettingsContextType {
   addListItem: (category: ListCategory, value: string) => Promise<ListItem>;
   updateListItem: (category: ListCategory, id: string, value: string) => Promise<ListItem>;
   deleteListItem: (category: ListCategory, id: string) => Promise<void>;
+  reorderListItems: (category: ListCategory, orderedIds: string[]) => Promise<void>;
   // Users
   users: UserItem[];
   setUsers: React.Dispatch<React.SetStateAction<UserItem[]>>;
@@ -376,6 +377,49 @@ export const AdminSettingsProvider: React.FC<{ children: React.ReactNode }> = ({
     setList((prev) => prev.filter((item) => item.id !== id));
   };
 
+  const reorderListItems = async (category: ListCategory, orderedIds: string[]) => {
+    const [, setList] = getListState(category);
+
+    // Optimistic reorder based on the ids from the UI.
+    setList((prev) => {
+      const byId = new Map(prev.map((i) => [i.id, i]));
+      const next: ListItem[] = [];
+      const seen = new Set<string>();
+
+      for (const id of orderedIds) {
+        const item = byId.get(id);
+        if (!item) continue;
+        if (seen.has(id)) continue;
+        seen.add(id);
+        next.push(item);
+      }
+      // Append any items not included (e.g. concurrent add).
+      for (const item of prev) {
+        if (seen.has(item.id)) continue;
+        next.push(item);
+      }
+      return next;
+    });
+
+    try {
+      await fetchJson<{ ok: boolean }>(`${API_BASE}/${category}/reorder`, {
+        method: 'PUT',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ orderedIds }),
+      });
+    } catch (error) {
+      console.error('Failed to reorder admin list:', error);
+      // Best-effort rollback: refetch server state.
+      try {
+        const fresh = await fetchJson<ListItem[]>(`${API_BASE}/${category}`);
+        setList(fresh);
+      } catch (e) {
+        console.error('Failed to refetch admin list after reorder failure:', e);
+      }
+      throw error;
+    }
+  };
+
   // Persist users to localStorage whenever data changes
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY_V5, JSON.stringify({ users }));
@@ -404,6 +448,7 @@ export const AdminSettingsProvider: React.FC<{ children: React.ReactNode }> = ({
       addListItem,
       updateListItem,
       deleteListItem,
+      reorderListItems,
       users,
       setUsers,
     }}>
