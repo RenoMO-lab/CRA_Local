@@ -389,31 +389,27 @@ const checkRateLimit = async (pool, req) => {
   const windowStart = new Date(windowStartMs);
   const key = `${getClientKey(req)}:${windowStartMs}`;
 
-  const existing = await pool
+  // Atomic upsert to avoid race conditions (duplicate key errors) under concurrent requests.
+  const result = await pool
     .request()
     .input("key", sql.NVarChar(200), key)
-    .query("SELECT [count] FROM rate_limits WHERE [key] = @key");
+    .input("window_start", sql.DateTime2, windowStart)
+    .query(`
+      MERGE rate_limits WITH (HOLDLOCK) AS target
+      USING (SELECT @key AS [key], @window_start AS window_start) AS source
+        ON target.[key] = source.[key]
+      WHEN MATCHED THEN
+        UPDATE SET [count] = target.[count] + 1
+      WHEN NOT MATCHED THEN
+        INSERT ([key], window_start, [count])
+        VALUES (source.[key], source.window_start, 1)
+      OUTPUT inserted.[count] AS [count];
+    `);
 
-  if (!existing.recordset.length) {
-    await pool
-      .request()
-      .input("key", sql.NVarChar(200), key)
-      .input("window_start", sql.DateTime2, windowStart)
-      .input("count", sql.Int, 1)
-      .query("INSERT INTO rate_limits ([key], window_start, [count]) VALUES (@key, @window_start, @count)");
-    return null;
-  }
-
-  const currentCount = existing.recordset[0].count;
-  if (currentCount >= limit) {
+  const newCount = Number(result.recordset?.[0]?.count ?? 0);
+  if (newCount > limit) {
     return windowStartMs + windowMs;
   }
-
-  await pool
-    .request()
-    .input("key", sql.NVarChar(200), key)
-    .query("UPDATE rate_limits SET [count] = [count] + 1 WHERE [key] = @key");
-
   return null;
 };
 

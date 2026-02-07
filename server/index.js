@@ -52,7 +52,22 @@ app.use((err, req, res, next) => {
 const port = Number.parseInt(process.env.PORT || "3000", 10);
 const host = process.env.HOST || "0.0.0.0";
 
-getPool()
+const sleepMs = (ms) => new Promise((r) => setTimeout(r, ms));
+
+const connectWithRetry = async ({ maxAttempts = 60, delayMs = 5000 } = {}) => {
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      await getPool();
+      return;
+    } catch (error) {
+      console.error(`Database connection failed (attempt ${attempt}/${maxAttempts}):`, error?.message ?? error);
+      if (attempt === maxAttempts) throw error;
+      await sleepMs(delayMs);
+    }
+  }
+};
+
+connectWithRetry()
   .then(() => {
     app.listen(port, host, () => {
       console.log(`Server listening on http://${host}:${port}`);
@@ -65,6 +80,6 @@ getPool()
     }
   })
   .catch((error) => {
-    console.error("Database connection failed:", error);
+    console.error("Database connection failed (giving up):", error);
     process.exit(1);
   });

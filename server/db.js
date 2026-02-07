@@ -59,7 +59,12 @@ let poolPromise;
 export const getPool = async () => {
   ensureRequiredEnv();
   if (!poolPromise) {
-    poolPromise = sql.connect(config);
+    // Important: if the initial connection fails (ex: SQL Server not ready yet),
+    // reset the cached promise so future calls can retry without restarting the process.
+    poolPromise = sql.connect(config).catch((err) => {
+      poolPromise = undefined;
+      throw err;
+    });
   }
   return poolPromise;
 };
