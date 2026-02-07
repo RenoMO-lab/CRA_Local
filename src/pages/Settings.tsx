@@ -56,6 +56,19 @@ import { Textarea } from '@/components/ui/textarea';
 type M365RoleKey = 'sales' | 'design' | 'costing' | 'admin';
 type M365FlowMap = Record<string, Partial<Record<M365RoleKey, boolean>>>;
 
+type M365ActionKey = 'request_created' | 'request_status_changed';
+
+type M365EmailTemplate = {
+  subject?: string;
+  title?: string;
+  intro?: string;
+  primaryButtonText?: string;
+  secondaryButtonText?: string;
+  footerText?: string;
+};
+
+type M365Templates = Record<M365ActionKey, M365EmailTemplate>;
+
 const FLOW_STATUS_KEYS = [
   'draft',
   'submitted',
@@ -87,6 +100,25 @@ const DEFAULT_FLOW_MAP: M365FlowMap = {
   gm_rejected: { sales: true, admin: true },
   closed: { sales: true },
   edited: { admin: true },
+};
+
+const DEFAULT_TEMPLATES: M365Templates = {
+  request_created: {
+    subject: '[CRA] Request {{requestId}} submitted',
+    title: 'New Request Submitted',
+    intro: 'A new CRA request has been submitted.',
+    primaryButtonText: 'Open request',
+    secondaryButtonText: 'Open dashboard',
+    footerText: 'You received this email because you are subscribed to CRA request notifications.',
+  },
+  request_status_changed: {
+    subject: '[CRA] Request {{requestId}} status changed to {{status}}',
+    title: 'Request Update',
+    intro: 'A CRA request status has been updated.',
+    primaryButtonText: 'Open request',
+    secondaryButtonText: 'Open dashboard',
+    footerText: 'You received this email because you are subscribed to CRA request notifications.',
+  },
 };
 
 interface FeedbackItem {
@@ -130,6 +162,7 @@ interface M365Settings {
   testMode: boolean;
   testEmail: string;
   flowMap: M365FlowMap | null;
+  templates: Record<string, any> | null;
 }
 
 interface M365AdminResponse {
@@ -205,6 +238,12 @@ const Settings: React.FC = () => {
   const [hasM365Error, setHasM365Error] = useState(false);
   const [m365TestEmail, setM365TestEmail] = useState('');
   const [m365LastPollStatus, setM365LastPollStatus] = useState<string | null>(null);
+  const [m365SelectedAction, setM365SelectedAction] = useState<M365ActionKey>('request_created');
+  const [m365PreviewStatus, setM365PreviewStatus] = useState<string>('submitted');
+  const [m365PreviewRequestId, setM365PreviewRequestId] = useState<string>('');
+  const [m365PreviewSubject, setM365PreviewSubject] = useState<string>('');
+  const [m365PreviewHtml, setM365PreviewHtml] = useState<string>('');
+  const [isM365PreviewLoading, setIsM365PreviewLoading] = useState(false);
   const severityLabels: Record<string, string> = {
     low: t.feedback.severityLow,
     medium: t.feedback.severityMedium,
@@ -250,6 +289,7 @@ const Settings: React.FC = () => {
     testMode: false,
     testEmail: '',
     flowMap: DEFAULT_FLOW_MAP,
+    templates: null,
   };
 
   const loadM365Info = async () => {
@@ -264,6 +304,7 @@ const Settings: React.FC = () => {
           ...defaultM365Settings,
           ...(data?.settings ?? {}),
           flowMap: data?.settings?.flowMap || DEFAULT_FLOW_MAP,
+          templates: data?.settings?.templates || DEFAULT_TEMPLATES,
         },
         connection: data?.connection ?? { hasRefreshToken: false, expiresAt: null },
         deviceCode: data?.deviceCode ?? null,
@@ -300,6 +341,55 @@ const Settings: React.FC = () => {
         description: t.request.failedSubmit,
         variant: 'destructive',
       });
+    }
+  };
+
+  const updateTemplateField = (action: M365ActionKey, field: keyof M365EmailTemplate, value: string) => {
+    setM365Info((prev) => {
+      const settings = prev?.settings ?? defaultM365Settings;
+      const templates = ((settings.templates as any) || DEFAULT_TEMPLATES) as M365Templates;
+      const nextTemplates: M365Templates = {
+        ...DEFAULT_TEMPLATES,
+        ...templates,
+        [action]: {
+          ...(DEFAULT_TEMPLATES[action] || {}),
+          ...(templates[action] || {}),
+          [field]: value,
+        },
+      };
+      return {
+        settings: { ...settings, templates: nextTemplates },
+        connection: prev?.connection ?? { hasRefreshToken: false, expiresAt: null },
+        deviceCode: prev?.deviceCode ?? null,
+      };
+    });
+  };
+
+  const previewM365Template = async () => {
+    setIsM365PreviewLoading(true);
+    try {
+      const res = await fetch('/api/admin/m365/preview', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          eventType: m365SelectedAction,
+          status: m365PreviewStatus,
+          requestId: m365PreviewRequestId,
+        }),
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok) throw new Error(`Preview failed: ${res.status}`);
+      setM365PreviewSubject(String(data?.subject ?? ''));
+      setM365PreviewHtml(String(data?.html ?? ''));
+    } catch (error) {
+      console.error('Failed to preview template:', error);
+      toast({
+        title: t.request.error,
+        description: String((error as any)?.message ?? error),
+        variant: 'destructive',
+      });
+    } finally {
+      setIsM365PreviewLoading(false);
     }
   };
 
@@ -1507,6 +1597,127 @@ const Settings: React.FC = () => {
                           </TableBody>
                         </Table>
                       </div>
+                    </div>
+
+                    <div className="rounded-lg border border-border bg-muted/10 p-4 space-y-4">
+                      <div className="space-y-1">
+                        <div className="text-sm font-semibold text-foreground">{t.settings.m365TemplatesTitle}</div>
+                        <div className="text-xs text-muted-foreground">{t.settings.m365TemplatesDesc}</div>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label>{t.settings.m365TemplateAction}</Label>
+                          <Select value={m365SelectedAction} onValueChange={(v) => setM365SelectedAction(v as M365ActionKey)}>
+                            <SelectTrigger>
+                              <SelectValue placeholder={t.settings.m365TemplateAction} />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="request_created">{t.settings.m365ActionCreated}</SelectItem>
+                              <SelectItem value="request_status_changed">{t.settings.m365ActionStatusChanged}</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label>{t.settings.m365TemplatePreviewStatus}</Label>
+                          <Select value={m365PreviewStatus} onValueChange={(v) => setM365PreviewStatus(v)}>
+                            <SelectTrigger>
+                              <SelectValue placeholder={t.settings.m365TemplatePreviewStatus} />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {FLOW_STATUS_KEYS.map((s) => (
+                                <SelectItem key={s} value={s}>{getStatusLabel(s)}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="m365-preview-requestid">{t.settings.m365TemplatePreviewRequestId}</Label>
+                        <Input
+                          id="m365-preview-requestid"
+                          value={m365PreviewRequestId}
+                          onChange={(e) => setM365PreviewRequestId(e.target.value)}
+                          placeholder="(optional) CRA26020704"
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label>{t.settings.m365TemplateSubject}</Label>
+                          <Input
+                            value={String(((m365Info?.settings?.templates as any) || DEFAULT_TEMPLATES)?.[m365SelectedAction]?.subject ?? '')}
+                            onChange={(e) => updateTemplateField(m365SelectedAction, 'subject', e.target.value)}
+                            placeholder="[CRA] Request {{requestId}} ..."
+                          />
+                          <p className="text-xs text-muted-foreground">{t.settings.m365TemplateVars}</p>
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label>{t.settings.m365TemplateTitle}</Label>
+                          <Input
+                            value={String(((m365Info?.settings?.templates as any) || DEFAULT_TEMPLATES)?.[m365SelectedAction]?.title ?? '')}
+                            onChange={(e) => updateTemplateField(m365SelectedAction, 'title', e.target.value)}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label>{t.settings.m365TemplateIntro}</Label>
+                        <Textarea
+                          value={String(((m365Info?.settings?.templates as any) || DEFAULT_TEMPLATES)?.[m365SelectedAction]?.intro ?? '')}
+                          onChange={(e) => updateTemplateField(m365SelectedAction, 'intro', e.target.value)}
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label>{t.settings.m365TemplatePrimary}</Label>
+                          <Input
+                            value={String(((m365Info?.settings?.templates as any) || DEFAULT_TEMPLATES)?.[m365SelectedAction]?.primaryButtonText ?? '')}
+                            onChange={(e) => updateTemplateField(m365SelectedAction, 'primaryButtonText', e.target.value)}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>{t.settings.m365TemplateSecondary}</Label>
+                          <Input
+                            value={String(((m365Info?.settings?.templates as any) || DEFAULT_TEMPLATES)?.[m365SelectedAction]?.secondaryButtonText ?? '')}
+                            onChange={(e) => updateTemplateField(m365SelectedAction, 'secondaryButtonText', e.target.value)}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label>{t.settings.m365TemplateFooter}</Label>
+                        <Textarea
+                          value={String(((m365Info?.settings?.templates as any) || DEFAULT_TEMPLATES)?.[m365SelectedAction]?.footerText ?? '')}
+                          onChange={(e) => updateTemplateField(m365SelectedAction, 'footerText', e.target.value)}
+                        />
+                      </div>
+
+                      <div className="flex flex-wrap gap-3 items-center">
+                        <Button variant="outline" onClick={previewM365Template} disabled={isM365PreviewLoading}>
+                          {isM365PreviewLoading ? t.common.loading : t.settings.m365TemplatePreview}
+                        </Button>
+                        <Button onClick={saveM365Settings}>{t.settings.saveChanges}</Button>
+                        <span className="text-xs text-muted-foreground">{t.settings.m365TemplateSaveHint}</span>
+                      </div>
+
+                      {m365PreviewHtml ? (
+                        <div className="rounded-lg border border-border bg-background overflow-hidden">
+                          <div className="p-3 border-b border-border">
+                            <div className="text-xs text-muted-foreground">{t.settings.m365TemplateSubjectPreview}</div>
+                            <div className="text-sm font-medium text-foreground break-words">{m365PreviewSubject || '-'}</div>
+                          </div>
+                          <iframe
+                            title="email-preview"
+                            style={{ width: '100%', height: 520, border: '0' }}
+                            srcDoc={m365PreviewHtml}
+                          />
+                        </div>
+                      ) : null}
                     </div>
 
                     <div className="rounded-lg border border-border bg-muted/10 p-4 space-y-4">

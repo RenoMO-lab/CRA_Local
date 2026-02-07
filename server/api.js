@@ -145,13 +145,49 @@ const statusBadgeStyles = (status) => {
   return { bg: "#E5E7EB", text: "#374151", border: "#D1D5DB" };
 };
 
+const DEFAULT_EMAIL_TEMPLATES = {
+  request_created: {
+    subject: "[CRA] Request {{requestId}} submitted",
+    title: "New Request Submitted",
+    intro: "A new CRA request has been submitted.",
+    primaryButtonText: "Open request",
+    secondaryButtonText: "Open dashboard",
+    footerText: "You received this email because you are subscribed to CRA request notifications.",
+  },
+  request_status_changed: {
+    subject: "[CRA] Request {{requestId}} status changed to {{status}}",
+    title: "Request Update",
+    intro: "A CRA request status has been updated.",
+    primaryButtonText: "Open request",
+    secondaryButtonText: "Open dashboard",
+    footerText: "You received this email because you are subscribed to CRA request notifications.",
+  },
+};
+
+const getTemplateForEvent = (settings, eventType) => {
+  const raw = settings?.templates && typeof settings.templates === "object" ? settings.templates : null;
+  const merged = {
+    ...(DEFAULT_EMAIL_TEMPLATES[eventType] ?? DEFAULT_EMAIL_TEMPLATES.request_status_changed),
+    ...(raw?.[eventType] ?? {}),
+  };
+  return merged;
+};
+
+const applyTemplateVars = (template, vars) => {
+  let out = String(template ?? "");
+  for (const [k, v] of Object.entries(vars ?? {})) {
+    out = out.replaceAll(`{{${k}}}`, String(v ?? ""));
+  }
+  return out;
+};
+
 const formatIsoUtc = (iso) => {
   const d = iso ? new Date(iso) : null;
   if (!d || Number.isNaN(d.getTime())) return "";
   return `${d.toISOString().replace("T", " ").slice(0, 19)} UTC`;
 };
 
-const renderStatusEmailHtml = ({ request, newStatus, actorName, comment, link, dashboardLink, logoUrl }) => {
+const renderStatusEmailHtml = ({ request, newStatus, actorName, comment, link, dashboardLink, logoUrl, template, introOverride }) => {
   const safeComment = String(comment ?? "").trim();
   const client = String(request?.clientName ?? "").trim();
   const contact = String(request?.clientContact ?? "").trim();
@@ -165,6 +201,11 @@ const renderStatusEmailHtml = ({ request, newStatus, actorName, comment, link, d
   const status = String(newStatus ?? "").trim();
   const statusLabel = humanizeStatus(status) || status || "Updated";
   const updatedAt = formatIsoUtc(request?.updatedAt ?? request?.createdAt);
+  const titleText = String(template?.title ?? "Request Update").trim() || "Request Update";
+  const introText = String(introOverride ?? template?.intro ?? "").trim();
+  const primaryText = String(template?.primaryButtonText ?? "Open request").trim() || "Open request";
+  const secondaryText = String(template?.secondaryButtonText ?? "Open dashboard").trim() || "Open dashboard";
+  const footerText = String(template?.footerText ?? "").trim();
 
   const badge = statusBadgeStyles(status);
   const openRequestHref = link ? escapeHtml(link) : "";
@@ -221,7 +262,8 @@ const renderStatusEmailHtml = ({ request, newStatus, actorName, comment, link, d
                 <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
                   <tr>
                     <td style="padding:20px 24px 10px 24px;">
-                      <div style="font-size:18px; font-weight:700; color:#111827;">Request Update</div>
+                      <div style="font-size:18px; font-weight:700; color:#111827;">${escapeHtml(titleText)}</div>
+                      ${introText ? `<div style="margin-top:6px; font-size:13px; color:#374151;">${escapeHtml(introText)}</div>` : ""}
                       <div style="margin-top:6px;">
                         <span style="display:inline-block; padding:6px 10px; border-radius:999px; background:${badge.bg}; color:${badge.text}; border:1px solid ${badge.border}; font-size:12px; font-weight:700;">
                           ${escapeHtml(statusLabel)}
@@ -262,12 +304,12 @@ const renderStatusEmailHtml = ({ request, newStatus, actorName, comment, link, d
                         <tr>
                           <td style="padding-right:10px;">
                             <a href="${openRequestHref}" style="display:inline-block; background:#D71920; color:#FFFFFF; text-decoration:none; padding:12px 16px; border-radius:8px; font-weight:700; font-size:14px;">
-                              Open request
+                              ${escapeHtml(primaryText)}
                             </a>
                           </td>
                           <td>
                             <a href="${openDashboardHref}" style="display:inline-block; background:#FFFFFF; color:#111827; text-decoration:none; padding:12px 16px; border-radius:8px; border:1px solid #E5E7EB; font-weight:700; font-size:14px;">
-                              Open dashboard
+                              ${escapeHtml(secondaryText)}
                             </a>
                           </td>
                         </tr>
@@ -282,7 +324,7 @@ const renderStatusEmailHtml = ({ request, newStatus, actorName, comment, link, d
 
             <tr>
               <td style="padding:14px 6px 0 6px; text-align:center; font-family: Arial, sans-serif; font-size:11px; color:#6B7280;">
-                You received this email because you are subscribed to CRA request notifications.
+                ${escapeHtml(footerText || "You received this email because you are subscribed to CRA request notifications.")}
               </td>
             </tr>
           </table>
@@ -734,12 +776,12 @@ export const apiRouter = (() => {
         getM365TokenState(pool),
         getLatestDeviceCodeSession(pool),
       ]);
-      res.json({
-        settings,
-        connection: {
-          hasRefreshToken: tokenState.hasRefreshToken,
-          expiresAt: tokenState.expiresAt,
-        },
+        res.json({
+          settings,
+          connection: {
+            hasRefreshToken: tokenState.hasRefreshToken,
+            expiresAt: tokenState.expiresAt,
+          },
         deviceCode: latestDc
           ? {
               userCode: latestDc.userCode,
@@ -752,6 +794,64 @@ export const apiRouter = (() => {
             }
           : null,
       });
+    })
+  );
+
+  router.post(
+    "/admin/m365/preview",
+    asyncHandler(async (req, res) => {
+      const body = safeJson(req.body) ?? {};
+      const eventType = String(body.eventType ?? "request_status_changed").trim();
+      const status = String(body.status ?? "submitted").trim();
+      const requestId = String(body.requestId ?? "").trim();
+
+      const pool = await getPool();
+      const settings = await getM365Settings(pool);
+
+      let request = null;
+      if (requestId) {
+        request = await getRequestById(pool, requestId);
+      }
+      if (!request) {
+        const nowIso = new Date().toISOString();
+        request = normalizeRequestData(
+          {
+            id: requestId || "CRA00000000",
+            status,
+            clientName: "Example Client",
+            clientContact: "John Doe",
+            country: "Example Country",
+            applicationVehicle: "Example Vehicle",
+            expectedQty: 100,
+            clientExpectedDeliveryDate: "2026-03-01",
+            createdAt: nowIso,
+            updatedAt: nowIso,
+            history: [],
+          },
+          nowIso
+        );
+      }
+
+      const template = getTemplateForEvent(settings, eventType);
+      const vars = {
+        requestId: request.id,
+        status,
+      };
+      const subject = applyTemplateVars(template.subject, vars);
+
+      const link = buildRequestLink(settings.appBaseUrl, request.id);
+      const html = renderStatusEmailHtml({
+        request,
+        newStatus: status,
+        actorName: "System",
+        comment: "Example comment (optional).",
+        link,
+        dashboardLink: buildDashboardLink(settings.appBaseUrl),
+        logoUrl: buildPublicAssetLink(settings.appBaseUrl, "monroc-logo.png"),
+        template,
+      });
+
+      res.json({ subject, html });
     })
   );
 
@@ -1332,6 +1432,11 @@ export const apiRouter = (() => {
             if (to.length) {
               const subject = `[CRA] Request ${id} status changed to ${createdStatus}`;
               const link = buildRequestLink(settings.appBaseUrl, id);
+              const template = getTemplateForEvent(settings, "request_created");
+              const subjectTpl = applyTemplateVars(template.subject, {
+                requestId: id,
+                status: createdStatus,
+              });
               const html = renderStatusEmailHtml({
                 request: requestData,
                 newStatus: createdStatus,
@@ -1340,13 +1445,15 @@ export const apiRouter = (() => {
                 link,
                 dashboardLink: buildDashboardLink(settings.appBaseUrl),
                 logoUrl: buildPublicAssetLink(settings.appBaseUrl, "monroc-logo.png"),
+                template,
+                introOverride: template.intro,
               });
               await pool
                 .request()
                 .input("event_type", sql.NVarChar(64), "request_created")
                 .input("request_id", sql.NVarChar(64), id)
                 .input("to_emails", sql.NVarChar(sql.MAX), to.join(", "))
-                .input("subject", sql.NVarChar(255), subject)
+                .input("subject", sql.NVarChar(255), subjectTpl || subject)
                 .input("body_html", sql.NVarChar(sql.MAX), html)
                 .query(
                   "INSERT INTO notification_outbox (event_type, request_id, to_emails, subject, body_html) VALUES (@event_type, @request_id, @to_emails, @subject, @body_html)"
@@ -1421,6 +1528,11 @@ export const apiRouter = (() => {
             if (to.length) {
               const subject = `[CRA] Request ${requestId} status changed to ${newStatus}`;
               const link = buildRequestLink(settings.appBaseUrl, requestId);
+              const template = getTemplateForEvent(settings, "request_status_changed");
+              const subjectTpl = applyTemplateVars(template.subject, {
+                requestId,
+                status: newStatus,
+              });
               const html = renderStatusEmailHtml({
                 request: updated,
                 newStatus,
@@ -1429,13 +1541,15 @@ export const apiRouter = (() => {
                 link,
                 dashboardLink: buildDashboardLink(settings.appBaseUrl),
                 logoUrl: buildPublicAssetLink(settings.appBaseUrl, "monroc-logo.png"),
+                template,
+                introOverride: template.intro,
               });
               await pool
                 .request()
                 .input("event_type", sql.NVarChar(64), "request_status_changed")
                 .input("request_id", sql.NVarChar(64), requestId)
                 .input("to_emails", sql.NVarChar(sql.MAX), to.join(", "))
-                .input("subject", sql.NVarChar(255), subject)
+                .input("subject", sql.NVarChar(255), subjectTpl || subject)
                 .input("body_html", sql.NVarChar(sql.MAX), html)
                 .query(
                   "INSERT INTO notification_outbox (event_type, request_id, to_emails, subject, body_html) VALUES (@event_type, @request_id, @to_emails, @subject, @body_html)"
