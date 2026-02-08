@@ -5,6 +5,7 @@ import { Eye, Edit, Trash2, MoreHorizontal, Download } from 'lucide-react';
 import { CustomerRequest, UserRole, RequestProduct, AXLE_LOCATIONS, ARTICULATION_TYPES, CONFIGURATION_TYPES } from '@/types';
 import StatusBadge from '@/components/ui/StatusBadge';
 import { Button } from '@/components/ui/button';
+import RequestReviewDrawer from '@/components/dashboard/RequestReviewDrawer';
 import {
   Select,
   SelectContent,
@@ -50,6 +51,7 @@ import { Label } from '@/components/ui/label';
 import { useLanguage } from '@/context/LanguageContext';
 import { Language } from '@/i18n/translations';
 import { toast } from 'sonner';
+
 interface RequestsTableProps {
   requests: CustomerRequest[];
   userRole: UserRole;
@@ -63,6 +65,8 @@ const RequestsTable: React.FC<RequestsTableProps> = ({ requests, userRole, onDel
   const [pdfLanguage, setPdfLanguage] = useState<Language>(language);
   const [pendingPdfRequest, setPendingPdfRequest] = useState<CustomerRequest | null>(null);
   const [isPdfDialogOpen, setIsPdfDialogOpen] = useState(false);
+  const [reviewRequestId, setReviewRequestId] = useState<string | null>(null);
+  const [isReviewOpen, setIsReviewOpen] = useState(false);
 
   const getPrimaryProduct = (request: CustomerRequest): Partial<RequestProduct> => {
     if (request.products && request.products.length) {
@@ -127,6 +131,11 @@ const RequestsTable: React.FC<RequestsTableProps> = ({ requests, userRole, onDel
     return userRole === 'admin';
   };
 
+  const handleQuickReview = (id: string) => {
+    setReviewRequestId(id);
+    setIsReviewOpen(true);
+  };
+
   const handleView = (id: string) => {
     navigate(`/requests/${id}`);
   };
@@ -180,13 +189,13 @@ const RequestsTable: React.FC<RequestsTableProps> = ({ requests, userRole, onDel
           <div
             key={request.id}
             className="p-4 space-y-3 cursor-pointer transition-colors hover:bg-muted/20"
-            onClick={() => handleView(request.id)}
+            onClick={() => handleQuickReview(request.id)}
             role="button"
             tabIndex={0}
             onKeyDown={(event) => {
               if (event.key === 'Enter' || event.key === ' ') {
                 event.preventDefault();
-                handleView(request.id);
+                handleQuickReview(request.id);
               }
             }}
           >
@@ -266,13 +275,13 @@ const RequestsTable: React.FC<RequestsTableProps> = ({ requests, userRole, onDel
                 index % 2 === 0 ? "bg-card" : "bg-muted/10"
               )}
               style={{ animationDelay: `${index * 50}ms` }}
-              onClick={() => handleView(request.id)}
+              onClick={() => handleQuickReview(request.id)}
               role="button"
               tabIndex={0}
               onKeyDown={(event) => {
                 if (event.key === 'Enter' || event.key === ' ') {
                   event.preventDefault();
-                  handleView(request.id);
+                  handleQuickReview(request.id);
                 }
               }}
             >
@@ -374,6 +383,16 @@ const RequestsTable: React.FC<RequestsTableProps> = ({ requests, userRole, onDel
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <RequestReviewDrawer
+        open={isReviewOpen}
+        onOpenChange={(next) => {
+          setIsReviewOpen(next);
+          if (!next) setReviewRequestId(null);
+        }}
+        requestId={reviewRequestId}
+        userRole={userRole}
+      />
     </div>
   );
 };

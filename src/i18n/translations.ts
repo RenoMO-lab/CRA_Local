@@ -124,6 +124,12 @@ export const translations = {
       allStatuses: 'All Statuses',
       ownership: 'Ownership',
       vsLastMonth: 'vs last month',
+      reviewOpenRequest: 'Open request',
+      reviewUpdatedLabel: 'Updated',
+      reviewDetailsTitle: 'Key details',
+      reviewActivityTitle: 'Recent activity',
+      reviewNoActivity: 'No activity yet.',
+      reviewLoadFailed: 'Unable to load request details. Please refresh and try again.',
     },
 
     // Performance
@@ -954,6 +960,12 @@ export const translations = {
       allStatuses: 'Tous les statuts',
       ownership: 'Responsabilité',
       vsLastMonth: 'vs mois dernier',
+      reviewOpenRequest: 'Ouvrir la demande',
+      reviewUpdatedLabel: 'Mis à jour',
+      reviewDetailsTitle: 'Infos clés',
+      reviewActivityTitle: 'Activité récente',
+      reviewNoActivity: 'Aucune activité pour le moment.',
+      reviewLoadFailed: 'Impossible de charger les détails. Veuillez actualiser et réessayer.',
     },
 
     // Performance
@@ -1784,6 +1796,12 @@ export const translations = {
       allStatuses: '所有状态',
       ownership: '归属',
       vsLastMonth: '较上月',
+      reviewOpenRequest: '打开请求',
+      reviewUpdatedLabel: '更新时间',
+      reviewDetailsTitle: '关键信息',
+      reviewActivityTitle: '最近动态',
+      reviewNoActivity: '暂无动态。',
+      reviewLoadFailed: '无法加载请求详情。请刷新后重试。',
     },
 
     // Performance
