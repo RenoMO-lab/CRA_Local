@@ -25,7 +25,7 @@ import KPICard from '@/components/dashboard/KPICard';
 import RequestsTable from '@/components/dashboard/RequestsTable';
 import { CustomerRequest, RequestStatus, STATUS_CONFIG } from '@/types';
 
-type FilterType = 'all' | RequestStatus | 'in_progress' | 'completed' | 'needs_attention';
+type FilterType = 'all' | RequestStatus | 'in_progress' | 'completed' | 'needs_attention' | 'costing_processed';
 type OwnershipFilter = 'all' | 'mine';
 
 const FINAL_STATUSES: RequestStatus[] = ['gm_approved', 'gm_rejected', 'closed'];
@@ -40,6 +40,14 @@ const IN_PROGRESS_STATUSES: RequestStatus[] = [
   'costing_complete',
   'sales_followup',
   'gm_approval_pending',
+];
+const COSTING_PROCESSED_STATUSES: RequestStatus[] = [
+  'in_costing',
+  'costing_complete',
+  'sales_followup',
+  'gm_approval_pending',
+  'gm_approved',
+  'gm_rejected',
 ];
 
 const Dashboard: React.FC = () => {
@@ -79,6 +87,9 @@ const Dashboard: React.FC = () => {
     }
     if (activeFilter === 'needs_attention') {
       return ownershipFilteredRequests.filter(r => NEEDS_ATTENTION_STATUSES.includes(r.status));
+    }
+    if (activeFilter === 'costing_processed') {
+      return ownershipFilteredRequests.filter(r => COSTING_PROCESSED_STATUSES.includes(r.status));
     }
     
     // Single status filter
@@ -120,7 +131,7 @@ const Dashboard: React.FC = () => {
           { title: t.dashboard.readyForCosting, value: countByStatus(['design_result']), icon: FileText, filterValue: 'design_result' as FilterType },
           { title: t.dashboard.inCosting, value: countByStatus(['in_costing']), icon: Clock, filterValue: 'in_costing' as FilterType },
           { title: t.dashboard.completed, value: countByStatus(['costing_complete']), icon: CheckCircle, filterValue: 'costing_complete' as FilterType },
-          { title: t.dashboard.totalProcessed, value: countByStatus(['in_costing', 'costing_complete', 'sales_followup', 'gm_approval_pending', 'gm_approved', 'gm_rejected']), icon: TrendingUp, filterValue: 'all' as FilterType },
+          { title: t.dashboard.totalProcessed, value: countByStatus(COSTING_PROCESSED_STATUSES), icon: TrendingUp, filterValue: 'costing_processed' as FilterType },
         ];
       case 'admin':
         return [
@@ -243,16 +254,19 @@ const Dashboard: React.FC = () => {
                 <Filter size={14} className="mr-2" />
                 <SelectValue placeholder={t.common.filter} />
               </SelectTrigger>
-              <SelectContent className="bg-card border border-border">
-                <SelectItem value="all">{t.dashboard.allStatuses}</SelectItem>
-                <SelectItem value="in_progress">{t.dashboard.inProgress}</SelectItem>
-                <SelectItem value="completed">{t.dashboard.completed}</SelectItem>
-                <SelectItem value="needs_attention">{t.dashboard.needsAttention}</SelectItem>
-                {availableStatuses.map((status) => (
-                  <SelectItem key={status} value={status}>
-                    {getStatusLabel(status)}
-                  </SelectItem>
-                ))}
+                <SelectContent className="bg-card border border-border">
+                  <SelectItem value="all">{t.dashboard.allStatuses}</SelectItem>
+                  <SelectItem value="in_progress">{t.dashboard.inProgress}</SelectItem>
+                  <SelectItem value="completed">{t.dashboard.completed}</SelectItem>
+                  <SelectItem value="needs_attention">{t.dashboard.needsAttention}</SelectItem>
+                  {user?.role === 'costing' && (
+                    <SelectItem value="costing_processed">{t.dashboard.totalProcessed}</SelectItem>
+                  )}
+                  {availableStatuses.map((status) => (
+                    <SelectItem key={status} value={status}>
+                      {getStatusLabel(status)}
+                    </SelectItem>
+                  ))}
               </SelectContent>
             </Select>
           </div>
