@@ -315,6 +315,13 @@ const RequestProcessSummary: React.FC<Props> = ({ request }) => {
     if (!s) return "";
     return t.statuses[s as keyof typeof t.statuses] || s;
   }, [salesEntry?.status, t.statuses]);
+
+  const salesEffectiveEntry = gmEntry ?? gmPendingEntry ?? salesEntry;
+  const salesEffectiveStatusLabel = useMemo(() => {
+    const s = salesEffectiveEntry?.status;
+    if (!s) return "";
+    return t.statuses[s as keyof typeof t.statuses] || s;
+  }, [salesEffectiveEntry?.status, t.statuses]);
   const gmStatusLabel = useMemo(() => {
     const s = gmEntry?.status ?? gmPendingEntry?.status;
     if (!s) return "";
@@ -415,8 +422,8 @@ const RequestProcessSummary: React.FC<Props> = ({ request }) => {
         <Card title={t.panels.salesFollowup} description={t.panels.salesFollowupDesc}>
           <StepTile
             title={salesSubmittedToGm ? t.panels.submittedToGm : (salesStatusLabel || t.panels.salesFollowup)}
-            statusLabel={salesStatusLabel ? `${t.common.status}: ${salesStatusLabel}` : undefined}
-            updatedAt={salesEntry?.timestamp ? formatDateTime(salesEntry.timestamp) : undefined}
+            statusLabel={salesEffectiveStatusLabel ? `${t.common.status}: ${salesEffectiveStatusLabel}` : undefined}
+            updatedAt={salesEffectiveEntry?.timestamp ? formatDateTime(salesEffectiveEntry.timestamp) : undefined}
           >
             <FieldLine
               label={t.panels.salesFinalPrice}
