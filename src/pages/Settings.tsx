@@ -317,6 +317,7 @@ const Settings: React.FC = () => {
   const [m365PreviewSubject, setM365PreviewSubject] = useState<string>('');
   const [m365PreviewHtml, setM365PreviewHtml] = useState<string>('');
   const [isM365PreviewLoading, setIsM365PreviewLoading] = useState(false);
+  const [exportFormat, setExportFormat] = useState<'csv' | 'xlsx'>('csv');
   const severityLabels: Record<string, string> = {
     low: t.feedback.severityLow,
     medium: t.feedback.severityMedium,
@@ -1204,13 +1205,40 @@ const Settings: React.FC = () => {
             <p className="text-sm text-muted-foreground">{t.settings.exportDataDesc || t.settings.exportCsvDesc}</p>
           </div>
           <div className="flex flex-col gap-2 md:flex-row md:items-center md:self-start">
-            <Button onClick={exportRequestsCsv}>
+            <div className="inline-flex items-center rounded-xl border border-border bg-muted/40 p-1">
+              <button
+                type="button"
+                onClick={() => setExportFormat('csv')}
+                aria-pressed={exportFormat === 'csv'}
+                className={cn(
+                  'px-3.5 py-2 rounded-lg text-sm font-semibold transition-colors',
+                  exportFormat === 'csv'
+                    ? 'bg-primary text-primary-foreground'
+                    : 'text-foreground hover:bg-primary/10 hover:text-primary'
+                )}
+              >
+                CSV
+              </button>
+              <button
+                type="button"
+                onClick={() => setExportFormat('xlsx')}
+                aria-pressed={exportFormat === 'xlsx'}
+                className={cn(
+                  'px-3.5 py-2 rounded-lg text-sm font-semibold transition-colors',
+                  exportFormat === 'xlsx'
+                    ? 'bg-primary text-primary-foreground'
+                    : 'text-foreground hover:bg-primary/10 hover:text-primary'
+                )}
+              >
+                Excel
+              </button>
+            </div>
+            <Button
+              onClick={() => (exportFormat === 'csv' ? exportRequestsCsv() : exportRequestsXlsx())}
+              className="md:min-w-32"
+            >
               <Download size={16} className="mr-2" />
-              {t.settings.exportCsv}
-            </Button>
-            <Button variant="outline" onClick={exportRequestsXlsx}>
-              <Download size={16} className="mr-2" />
-              {t.settings.exportXlsx}
+              {t.settings.export}
             </Button>
           </div>
         </div>
