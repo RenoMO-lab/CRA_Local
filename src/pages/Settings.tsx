@@ -56,6 +56,7 @@ import ListManager from '@/components/settings/ListManager';
 import { format } from 'date-fns';
 import { Textarea } from '@/components/ui/textarea';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { ResponsiveContainer, LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip, BarChart, Bar } from 'recharts';
 
 type M365RoleKey = 'sales' | 'design' | 'costing' | 'admin';
 type M365FlowMap = Record<string, Partial<Record<M365RoleKey, boolean>>>;
@@ -191,6 +192,8 @@ interface M365AdminResponse {
 type DbMonitorWaitRow = {
   waitType: string;
   waitMs: number | null;
+  deltaWaitMs?: number | null;
+  isNoise?: boolean;
 };
 
 type DbMonitorQueryRow = {
@@ -204,6 +207,7 @@ type DbMonitorQueryRow = {
 
 type DbMonitorSnapshot = {
   collectedAt: string;
+  sqlserverStartTime?: string | null;
   database: {
     databaseName: string;
     serverName: string;
@@ -217,12 +221,26 @@ type DbMonitorSnapshot = {
     blockedRequests: number | null;
   };
   topWaits: DbMonitorWaitRow[];
+  allWaits?: DbMonitorWaitRow[];
+  baselineCollectedAt?: string | null;
   topQueries: DbMonitorQueryRow[];
   errors: { section: string; message: string }[];
 };
 
 type DbMonitorState = {
+  health?: { status: 'green' | 'yellow' | 'red'; label: string };
   snapshot: DbMonitorSnapshot | null;
+  history?: {
+    keep: number;
+    points: Array<{
+      collectedAt: string;
+      sizeMb: number | null;
+      userSessions: number | null;
+      activeRequests: number | null;
+      blockedRequests: number | null;
+      partialErrors: number;
+    }>;
+  };
   refreshing: boolean;
   lastError: string | null;
   lastRefreshedAt: string | null;
@@ -287,6 +305,7 @@ const Settings: React.FC = () => {
   const [dbMonitor, setDbMonitor] = useState<DbMonitorState | null>(null);
   const [isDbMonitorLoading, setIsDbMonitorLoading] = useState(false);
   const [hasDbMonitorError, setHasDbMonitorError] = useState(false);
+  const [dbWaitsShowNoise, setDbWaitsShowNoise] = useState(false);
   const [m365Info, setM365Info] = useState<M365AdminResponse | null>(null);
   const [isM365Loading, setIsM365Loading] = useState(false);
   const [hasM365Error, setHasM365Error] = useState(false);
@@ -2150,6 +2169,26 @@ const Settings: React.FC = () => {
                 <p className="text-xs text-muted-foreground">
                   {t.settings.dbMonitorAutoRefresh}: {t.settings.dbMonitorHourly}
                 </p>
+                <div className="flex items-center gap-2 text-xs text-muted-foreground pt-1">
+                  <span
+                    className={cn(
+                      'inline-block h-2.5 w-2.5 rounded-full',
+                      dbMonitor?.health?.status === 'green'
+                        ? 'bg-emerald-500'
+                        : dbMonitor?.health?.status === 'yellow'
+                          ? 'bg-amber-500'
+                          : 'bg-red-500'
+                    )}
+                    aria-hidden="true"
+                  />
+                  <span className="text-foreground font-medium">{t.settings.dbMonitorStatus}:</span>
+                  <span>{dbMonitor?.health?.label || '-'}</span>
+                  {dbMonitor?.snapshot?.sqlserverStartTime ? (
+                    <span className="text-muted-foreground">
+                      ({t.settings.dbMonitorSqlStart}: {format(new Date(dbMonitor.snapshot.sqlserverStartTime), 'MMM d, yyyy HH:mm')})
+                    </span>
+                  ) : null}
+                </div>
               </div>
               <div className="flex flex-col gap-2 md:items-end">
                 <div className="text-xs text-muted-foreground">
@@ -2255,21 +2294,108 @@ const Settings: React.FC = () => {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div className="bg-card rounded-lg border border-border p-4 md:p-6 space-y-3">
               <div className="flex items-center justify-between gap-3">
-                <div className="text-sm font-semibold text-foreground">{t.settings.dbMonitorTopWaits}</div>
+                <div className="text-sm font-semibold text-foreground">{t.settings.dbMonitorChartLoad}</div>
+                <span className="text-xs text-muted-foreground">{t.settings.dbMonitorLast24h}</span>
               </div>
+              <div className="h-56">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart
+                    data={(dbMonitor?.history?.points ?? []).slice(-24).map((p) => ({
+                      time: p.collectedAt ? format(new Date(p.collectedAt), 'HH:mm') : '',
+                      sessions: p.userSessions ?? null,
+                      active: p.activeRequests ?? null,
+                      blocked: p.blockedRequests ?? null,
+                    }))}
+                    margin={{ top: 10, right: 16, left: 0, bottom: 0 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" opacity={0.25} />
+                    <XAxis dataKey="time" tick={{ fontSize: 11 }} />
+                    <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
+                    <Tooltip />
+                    <Line type="monotone" dataKey="sessions" stroke="#0EA5E9" strokeWidth={2} dot={false} />
+                    <Line type="monotone" dataKey="active" stroke="#A855F7" strokeWidth={2} dot={false} />
+                    <Line type="monotone" dataKey="blocked" stroke="#EF4444" strokeWidth={2} dot={false} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+              <p className="text-xs text-muted-foreground">{t.settings.dbMonitorChartLoadHint}</p>
+            </div>
+
+            <div className="bg-card rounded-lg border border-border p-4 md:p-6 space-y-3">
+              <div className="flex items-center justify-between gap-3">
+                <div className="text-sm font-semibold text-foreground">{t.settings.dbMonitorChartSize}</div>
+                <span className="text-xs text-muted-foreground">{t.settings.dbMonitorLast24h}</span>
+              </div>
+              <div className="h-56">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart
+                    data={(dbMonitor?.history?.points ?? []).slice(-24).map((p) => ({
+                      time: p.collectedAt ? format(new Date(p.collectedAt), 'HH:mm') : '',
+                      sizeMb: p.sizeMb ?? null,
+                    }))}
+                    margin={{ top: 10, right: 16, left: 0, bottom: 0 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" opacity={0.25} />
+                    <XAxis dataKey="time" tick={{ fontSize: 11 }} />
+                    <YAxis tick={{ fontSize: 11 }} width={48} />
+                    <Tooltip />
+                    <Line type="monotone" dataKey="sizeMb" stroke="#10B981" strokeWidth={2} dot={false} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+              <p className="text-xs text-muted-foreground">{t.settings.dbMonitorChartSizeHint}</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="bg-card rounded-lg border border-border p-4 md:p-6 space-y-3">
+              <div className="flex items-center justify-between gap-3">
+                <div className="text-sm font-semibold text-foreground">{t.settings.dbMonitorTopWaits}</div>
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <Checkbox
+                    id="db-waits-show-noise"
+                    checked={dbWaitsShowNoise}
+                    onCheckedChange={(v) => setDbWaitsShowNoise(Boolean(v))}
+                  />
+                  <Label htmlFor="db-waits-show-noise" className="text-xs text-muted-foreground cursor-pointer">
+                    {t.settings.dbMonitorShowNoise}
+                  </Label>
+                </div>
+              </div>
+              {dbMonitor?.snapshot?.baselineCollectedAt ? (
+                <div className="text-xs text-muted-foreground">
+                  {t.settings.dbMonitorDeltaBaseline}:{' '}
+                  <span className="text-foreground">
+                    {format(new Date(dbMonitor.snapshot.baselineCollectedAt), 'MMM d, yyyy HH:mm')}
+                  </span>
+                </div>
+              ) : null}
               {dbMonitor?.snapshot?.topWaits?.length ? (
                 <div className="rounded-md border border-border overflow-hidden">
                   <Table>
                     <TableHeader>
                       <TableRow>
                         <TableHead>{t.settings.dbMonitorWaitType}</TableHead>
+                        <TableHead className="text-right">{t.settings.dbMonitorDeltaMs}</TableHead>
                         <TableHead className="text-right">{t.settings.dbMonitorWaitMs}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {dbMonitor.snapshot.topWaits.slice(0, 10).map((row, idx) => (
+                      {(() => {
+                        const all = (dbMonitor.snapshot.allWaits ?? dbMonitor.snapshot.topWaits ?? []) as DbMonitorWaitRow[];
+                        const rows = dbWaitsShowNoise
+                          ? all
+                          : all.filter((r) => !r.isNoise);
+                        const sorted = rows
+                          .slice()
+                          .sort((a, b) => (Number(b.deltaWaitMs ?? 0) - Number(a.deltaWaitMs ?? 0)) || (Number(b.waitMs ?? 0) - Number(a.waitMs ?? 0)));
+                        return sorted.slice(0, 10);
+                      })().map((row, idx) => (
                         <TableRow key={`${row.waitType}-${idx}`}>
                           <TableCell className="font-mono text-xs break-all">{row.waitType}</TableCell>
+                          <TableCell className="text-right text-sm">
+                            {row.deltaWaitMs !== null && row.deltaWaitMs !== undefined ? Math.round(row.deltaWaitMs) : '-'}
+                          </TableCell>
                           <TableCell className="text-right text-sm">{row.waitMs ?? '-'}</TableCell>
                         </TableRow>
                       ))}
