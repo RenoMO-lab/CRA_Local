@@ -347,7 +347,34 @@ const computeHealth = () => {
 const computeWaitDeltas = () => {
   const current = monitorState.snapshot;
   const prev = monitorState.baseline;
-  if (!current || !prev) return { baselineCollectedAt: null, waits: [], recommended: [] };
+  if (!current) return { baselineCollectedAt: null, waits: [], recommended: [] };
+
+  // If we don't have a baseline yet, still return a useful "top waits by total" view.
+  if (!prev) {
+    const waits = (current.waits ?? [])
+      .map((w) => {
+        const key = String(w.waitType ?? "");
+        const curMs = safeNumber(w.waitMs);
+        return {
+          waitType: key,
+          waitMs: curMs,
+          deltaWaitMs: null,
+          isNoise: isNoiseWait(key),
+        };
+      })
+      .filter((w) => w.waitType)
+      .sort((a, b) => (Number(b.waitMs ?? 0) - Number(a.waitMs ?? 0)))
+      .slice(0, 200);
+
+    const recommended = waits
+      .filter((w) => !w.isNoise && (w.waitMs ?? 0) > 0)
+      .slice()
+      .sort((a, b) => (Number(b.waitMs ?? 0) - Number(a.waitMs ?? 0)))
+      .slice(0, 10);
+
+    return { baselineCollectedAt: null, waits, recommended };
+  }
+
   if (!current.sqlserverStartTime || !prev.sqlserverStartTime) {
     return { baselineCollectedAt: prev.collectedAt ?? null, waits: [], recommended: [] };
   }
@@ -370,7 +397,7 @@ const computeWaitDeltas = () => {
     if (key) prevMap.set(key, val ?? 0);
   }
 
-  const waits = (current.waits ?? [])
+  const waitsAll = (current.waits ?? [])
     .map((w) => {
       const key = String(w.waitType ?? "");
       const curMs = safeNumber(w.waitMs);
@@ -385,7 +412,16 @@ const computeWaitDeltas = () => {
     })
     .filter((w) => w.waitType);
 
-  const recommended = waits
+  const waits = waitsAll
+    .slice()
+    .sort(
+      (a, b) =>
+        (Number(b.deltaWaitMs ?? 0) - Number(a.deltaWaitMs ?? 0)) ||
+        (Number(b.waitMs ?? 0) - Number(a.waitMs ?? 0))
+    )
+    .slice(0, 200);
+
+  const recommended = waitsAll
     .filter((w) => !w.isNoise && (w.deltaWaitMs ?? 0) > 0)
     .sort((a, b) => (b.deltaWaitMs ?? 0) - (a.deltaWaitMs ?? 0))
     .slice(0, 10);
@@ -411,7 +447,14 @@ export const getDbMonitorState = () => {
     health: computeHealth(),
     snapshot: monitorState.snapshot
       ? {
-          ...monitorState.snapshot,
+          id: monitorState.snapshot.id,
+          collectedAt: monitorState.snapshot.collectedAt,
+          sqlserverStartTime: monitorState.snapshot.sqlserverStartTime ?? null,
+          database: monitorState.snapshot.database,
+          sizeMb: monitorState.snapshot.sizeMb,
+          sessions: monitorState.snapshot.sessions,
+          topQueries: monitorState.snapshot.topQueries ?? [],
+          errors: monitorState.snapshot.errors ?? [],
           topWaits: deltas.recommended,
           allWaits: deltas.waits,
           baselineCollectedAt: deltas.baselineCollectedAt,
