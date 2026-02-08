@@ -423,6 +423,30 @@ const RequestProcessSummary: React.FC<Props> = ({ request }) => {
               value={typeof request.salesFinalPrice === "number" ? `${request.salesCurrency ?? "EUR"} ${request.salesFinalPrice.toFixed(2)}` : "-"}
             />
             <FieldLine
+              label={t.panels.incoterm}
+              value={(() => {
+                const inc = String((request as any).salesIncoterm ?? "").trim();
+                if (!inc) return "-";
+                if (inc.toLowerCase() === "other") {
+                  const other = String((request as any).salesIncotermOther ?? "").trim();
+                  return other || t.common.other;
+                }
+                return translateOption(inc);
+              })()}
+            />
+            <FieldLine
+              label={t.panels.vatMode}
+              value={(() => {
+                const mode = String((request as any).salesVatMode ?? "").trim();
+                if (!mode) return "-";
+                if (mode === "with") {
+                  const rate = typeof (request as any).salesVatRate === "number" ? (request as any).salesVatRate : null;
+                  return rate !== null ? `${t.panels.withVat} (${rate}%)` : t.panels.withVat;
+                }
+                return t.panels.withoutVat;
+              })()}
+            />
+            <FieldLine
               label={t.panels.salesFeedback}
               value={request.salesFeedbackComment?.trim() ? <div className="whitespace-pre-line text-right">{request.salesFeedbackComment}</div> : "-"}
             />
