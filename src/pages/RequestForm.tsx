@@ -19,6 +19,7 @@ import StatusTimeline from '@/components/request/StatusTimeline';
 import DesignResultSection from '@/components/request/DesignResultSection';
 import SalesFollowupPanel from '@/components/request/SalesFollowupPanel';
 import RequestSummaryView from '@/components/request/RequestSummaryView';
+import RequestProcessSummary from '@/components/request/RequestProcessSummary';
 import StatusBadge from '@/components/ui/StatusBadge';
 import { ArrowLeft, ArrowRight, CheckCircle, ClipboardCheck, Clock, Download, Eye, File, Loader2, Save } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -1543,6 +1544,7 @@ const RequestForm: React.FC = () => {
               </div>
 
               <RequestSummaryView request={existingRequest} />
+              <RequestProcessSummary request={existingRequest} />
 
               <Sheet open={isMyActionsOpen} onOpenChange={setIsMyActionsOpen}>
                 <SheetContent side="right" className="w-full sm:max-w-2xl overflow-y-auto">
