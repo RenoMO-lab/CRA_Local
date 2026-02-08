@@ -1,11 +1,12 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import { format } from "date-fns";
-import { File, Paperclip } from "lucide-react";
+import { Download, Eye, File, Paperclip } from "lucide-react";
 
 import { useLanguage } from "@/context/LanguageContext";
 import { Attachment, CustomerRequest, RequestProduct } from "@/types";
 import { cn } from "@/lib/utils";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 type Props = {
   request: CustomerRequest;
@@ -114,6 +115,20 @@ const normalizeProducts = (r: CustomerRequest): RequestProduct[] => {
 
 const RequestSummaryView: React.FC<Props> = ({ request }) => {
   const { t, translateOption } = useLanguage();
+  const [previewAttachment, setPreviewAttachment] = useState<Attachment | null>(null);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+
+  const openPreview = (attachment: Attachment) => {
+    setPreviewAttachment(attachment);
+    setIsPreviewOpen(true);
+  };
+
+  const isImageFile = (filename: string) => {
+    const ext = filename.toLowerCase().split(".").pop();
+    return ["jpg", "jpeg", "png", "gif", "webp", "bmp"].includes(ext || "");
+  };
+
+  const isPdfFile = (filename: string) => filename.toLowerCase().endsWith(".pdf");
 
   const countryDisplay = useMemo(() => {
     if ((request.country || "").trim().toLowerCase() === "other") {
@@ -266,18 +281,34 @@ const RequestSummaryView: React.FC<Props> = ({ request }) => {
                         {attachments.map((a) => {
                           const href = buildAttachmentHref(a);
                           return (
-                            <a
+                            <div
                               key={a.id}
-                              href={href}
-                              download={a.filename}
                               className="flex items-center justify-between gap-2 rounded-lg border border-border bg-muted/20 px-3 py-2 hover:bg-muted/30"
                             >
                               <div className="flex min-w-0 items-center gap-2">
                                 <File className="h-4 w-4 text-primary" />
                                 <span className="text-sm truncate text-foreground">{a.filename}</span>
                               </div>
-                              <span className="text-xs text-muted-foreground">{formatDate(a.uploadedAt)}</span>
-                            </a>
+                              <div className="flex items-center gap-2 shrink-0">
+                                <span className="hidden sm:inline text-xs text-muted-foreground">{formatDate(a.uploadedAt)}</span>
+                                <button
+                                  type="button"
+                                  onClick={() => openPreview(a)}
+                                  className="rounded p-1.5 text-primary hover:bg-primary/15"
+                                  title={t.table.view}
+                                >
+                                  <Eye size={16} />
+                                </button>
+                                <a
+                                  href={href}
+                                  download={a.filename}
+                                  className="rounded p-1.5 text-primary hover:bg-primary/15"
+                                  title={t.request.downloadFile}
+                                >
+                                  <Download size={16} />
+                                </a>
+                              </div>
+                            </div>
                           );
                         })}
                       </div>
@@ -291,6 +322,49 @@ const RequestSummaryView: React.FC<Props> = ({ request }) => {
           })}
         </Accordion>
       </SummaryCard>
+
+      <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
+        <DialogContent
+          className="max-w-4xl max-h-[90vh] overflow-auto"
+          onInteractOutside={(event) => event.preventDefault()}
+          onEscapeKeyDown={(event) => event.preventDefault()}
+        >
+          <DialogHeader>
+            <DialogTitle className="truncate pr-8">{previewAttachment?.filename}</DialogTitle>
+          </DialogHeader>
+          <div className="flex min-h-[300px] items-center justify-center">
+            {previewAttachment && isImageFile(previewAttachment.filename) && (
+              <img
+                src={buildAttachmentHref(previewAttachment)}
+                alt={previewAttachment.filename}
+                className="max-h-[70vh] max-w-full object-contain"
+              />
+            )}
+            {previewAttachment && isPdfFile(previewAttachment.filename) && (
+              <iframe
+                src={buildAttachmentHref(previewAttachment)}
+                title={previewAttachment.filename}
+                className="h-[70vh] w-full border border-border rounded"
+              />
+            )}
+            {previewAttachment &&
+              !isImageFile(previewAttachment.filename) &&
+              !isPdfFile(previewAttachment.filename) && (
+                <div className="space-y-3 text-center">
+                  <div className="text-sm text-muted-foreground">{t.request.previewNotAvailable}</div>
+                  <a
+                    href={buildAttachmentHref(previewAttachment)}
+                    download={previewAttachment.filename}
+                    className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
+                  >
+                    <Download size={16} className="mr-2" />
+                    {t.request.downloadFile}
+                  </a>
+                </div>
+              )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
