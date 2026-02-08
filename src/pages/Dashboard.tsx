@@ -237,20 +237,16 @@ const Dashboard: React.FC = () => {
               </SelectContent>
             </Select>
             
-            <Select value={activeFilter} onValueChange={(value) => setActiveFilter(value as FilterType)}>
+             <Select value={activeFilter} onValueChange={(value) => setActiveFilter(value as FilterType)}>
               <SelectTrigger className="w-[180px]">
                 <Filter size={14} className="mr-2" />
                 <SelectValue placeholder={t.common.filter} />
               </SelectTrigger>
               <SelectContent className="bg-card border border-border">
                 <SelectItem value="all">{t.dashboard.allStatuses}</SelectItem>
-                {user?.role === 'admin' && (
-                  <>
-                    <SelectItem value="in_progress">{t.dashboard.inProgress}</SelectItem>
-                    <SelectItem value="completed">{t.dashboard.completed}</SelectItem>
-                    <SelectItem value="needs_attention">{t.dashboard.needsAttention}</SelectItem>
-                  </>
-                )}
+                <SelectItem value="in_progress">{t.dashboard.inProgress}</SelectItem>
+                <SelectItem value="completed">{t.dashboard.completed}</SelectItem>
+                <SelectItem value="needs_attention">{t.dashboard.needsAttention}</SelectItem>
                 {availableStatuses.map((status) => (
                   <SelectItem key={status} value={status}>
                     {getStatusLabel(status)}
