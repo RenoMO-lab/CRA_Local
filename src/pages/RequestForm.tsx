@@ -319,18 +319,9 @@ const RequestForm: React.FC = () => {
     design: false,
     costing: false,
   });
-  const myActionsAutoCloseRef = useRef<number | null>(null);
-
-  const clearMyActionsAutoClose = () => {
-    if (myActionsAutoCloseRef.current) {
-      window.clearTimeout(myActionsAutoCloseRef.current);
-      myActionsAutoCloseRef.current = null;
-    }
-  };
 
   useEffect(() => {
     if (!isMyActionsOpen) {
-      clearMyActionsAutoClose();
       setMyActionsResult(null);
       setMyActionsEditMode({ sales: false, design: false, costing: false });
       return;
@@ -1122,19 +1113,11 @@ const RequestForm: React.FC = () => {
   const markMyActionComplete = (status: RequestStatus) => {
     const transferredTo = getTransferTarget(status);
     setMyActionsResult({ kind: 'completed', status, transferredTo });
-    clearMyActionsAutoClose();
-    myActionsAutoCloseRef.current = window.setTimeout(() => {
-      setIsMyActionsOpen(false);
-    }, 2200);
   };
 
   const markMyActionEdited = (status: RequestStatus) => {
     const transferredTo = getTransferTarget(status);
     setMyActionsResult({ kind: 'edited', status, transferredTo });
-    clearMyActionsAutoClose();
-    myActionsAutoCloseRef.current = window.setTimeout(() => {
-      setIsMyActionsOpen(false);
-    }, 2200);
   };
 
   const renderMyActionsContent = () => {
@@ -1142,35 +1125,50 @@ const RequestForm: React.FC = () => {
     if (myActionsResult) {
       const statusLabel = t.statuses[myActionsResult.status as keyof typeof t.statuses] || myActionsResult.status;
       const isEdited = myActionsResult.kind === 'edited';
+      const accent = isEdited ? 'bg-primary/15 text-primary' : 'bg-emerald-500/15 text-emerald-300';
+      const border = isEdited ? 'border-primary/25' : 'border-emerald-500/25';
       return (
-        <div className="space-y-4">
-          <div className="rounded-xl border border-success/30 bg-success/10 p-4">
-            <div className="flex items-start gap-3">
-              <div className="mt-0.5 h-10 w-10 rounded-xl bg-success/20 text-success flex items-center justify-center">
-                <CheckCircle size={20} />
+        <div className={`relative overflow-hidden rounded-2xl border ${border} bg-gradient-to-br from-background via-background to-muted/30 p-5`}>
+          <div className="pointer-events-none absolute inset-0 opacity-70 [mask-image:radial-gradient(ellipse_at_top,black,transparent_65%)]">
+            <div className={`absolute -top-16 -right-16 h-48 w-48 rounded-full blur-3xl ${isEdited ? 'bg-primary/30' : 'bg-emerald-500/30'}`} />
+            <div className="absolute -bottom-20 -left-16 h-52 w-52 rounded-full bg-muted/40 blur-3xl" />
+          </div>
+
+          <div className="relative flex items-start gap-4">
+            <div className={`h-11 w-11 shrink-0 rounded-2xl ${accent} flex items-center justify-center ring-1 ring-white/5`}>
+              <CheckCircle size={20} />
+            </div>
+
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                <div className="min-w-0">
+                  <div className="text-base font-semibold leading-tight text-foreground">
+                    {isEdited ? t.request.actionEditedTitle : t.request.actionCompletedTitle}
+                  </div>
+                  <div className="mt-1 text-sm text-muted-foreground">
+                    {isEdited ? t.request.actionEditedDesc : t.request.actionCompletedDesc}
+                  </div>
+                </div>
+
+                <div className="flex shrink-0 items-center gap-2">
+                  <div className="inline-flex items-center gap-2 rounded-full border border-border bg-card/70 px-3 py-1.5 text-xs">
+                    <span className="text-muted-foreground">{t.common.status}</span>
+                    <span className="font-semibold text-foreground">{statusLabel}</span>
+                  </div>
+                </div>
               </div>
-              <div className="min-w-0 flex-1">
-                <div className="text-sm font-semibold text-foreground">
-                  {isEdited ? t.request.actionEditedTitle : t.request.actionCompletedTitle}
+
+              <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div className="inline-flex items-center gap-2 rounded-xl border border-border bg-card/60 px-3 py-2 text-sm">
+                  <span className="text-muted-foreground">{isEdited ? t.request.notifiedRole : t.request.transferredTo}:</span>
+                  <span className="font-semibold text-foreground">{myActionsResult.transferredTo}</span>
                 </div>
-                <div className="mt-1 text-sm text-muted-foreground">
-                  {isEdited ? t.request.actionEditedDesc : t.request.actionCompletedDesc}
-                </div>
-                <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div className="rounded-lg border border-border bg-card/60 px-3 py-2">
-                    <div className="text-xs uppercase tracking-wide text-muted-foreground">{t.common.status}</div>
-                    <div className="text-sm font-semibold text-foreground">{statusLabel}</div>
-                  </div>
-                  <div className="rounded-lg border border-border bg-card/60 px-3 py-2">
-                    <div className="text-xs uppercase tracking-wide text-muted-foreground">
-                      {isEdited ? t.request.notifiedRole : t.request.transferredTo}
-                    </div>
-                    <div className="text-sm font-semibold text-foreground">{myActionsResult.transferredTo}</div>
-                  </div>
-                </div>
-                <div className="mt-3 text-xs text-muted-foreground">{t.request.drawerAutoCloseHint}</div>
-                <div className="mt-4 flex items-center justify-end gap-2">
-                  <Button variant="outline" onClick={() => setIsMyActionsOpen(false)}>
+
+                <div className="flex items-center justify-end gap-2">
+                  <Button variant="outline" onClick={() => setMyActionsResult(null)}>
+                    {t.common.back}
+                  </Button>
+                  <Button onClick={() => setIsMyActionsOpen(false)}>
                     {t.common.close}
                   </Button>
                 </div>
