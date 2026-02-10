@@ -199,7 +199,7 @@ export interface ReferenceProduct {
 
 export type FormMode = 'create' | 'draft_edit' | 'clarification_edit' | 'read_only';
 
-export interface StandardStudsPcdOption {
+interface StandardStudsPcdOption {
   id: string;
   label: string;
   description: string;
@@ -235,7 +235,7 @@ export const CONFIGURATION_TYPES: { value: ConfigurationType; label: string }[] 
   { value: 'other', label: 'Other' },
 ];
 
-export const BRAKE_SIZES = ['180x32', '250x50', '300x60', '400x80'];
+const BRAKE_SIZES = ['180x32', '250x50', '300x60', '400x80'];
 
 export const STATUS_CONFIG: Record<RequestStatus, { label: string; color: string; bgColor: string }> = {
   draft: { label: 'Draft', color: 'text-muted-foreground', bgColor: 'bg-muted' },

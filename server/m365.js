@@ -261,7 +261,7 @@ export const claimDeviceCodeSessionForRedeem = async (pool, { id }) => {
   return result?.rowsAffected?.[0] ?? 0;
 };
 
-export const refreshAccessToken = async ({ tenantId, clientId, refreshToken, scope }) => {
+const refreshAccessToken = async ({ tenantId, clientId, refreshToken, scope }) => {
   ensureFetch();
   const tenant = getTenant(tenantId);
   const url = `https://login.microsoftonline.com/${tenant}/oauth2/v2.0/token`;
